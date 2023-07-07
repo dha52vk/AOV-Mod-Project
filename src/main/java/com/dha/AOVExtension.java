@@ -19,7 +19,7 @@ public class AOVExtension {
     public static String DatabinPath = "F:/This PC/Documents/AOV/Resources/1.50.1/Databin/Client/";
     public static String AssetRefsPath = "F:/This PC/Documents/AOV/Resources/1.50.1/AssetRefs/";
     public static String LanguagePath = "F:/This PC/Documents/AOV/Resources/1.50.1/Languages/VN_Garena_VN/";
-    public static String SpecialPath = "F:/This PC/Documents/AOV/.special/";
+    public static String SpecialPath = ".special/";
 
     public static List<String> idNotSwap = new ArrayList<>(Arrays.asList(new String[] {
             "19014", "11213", "13211", "50118", "16711", "19610", "13610", "11813", "5157", "5255",
@@ -2952,7 +2952,7 @@ public class AOVExtension {
     }
 
     public static byte[] AOVDecompress(byte[] compressed) {
-        String zstdDictPath = "D:/zstd_dict.bin";
+        String zstdDictPath = "zstd_dict.bin";
         byte[] zstdDict = DHAExtension.ReadAllBytes(zstdDictPath);
 
         int start = DHAExtension.indexOf(compressed, new byte[] { 40, (byte) 181, 47, (byte) 253 });
@@ -2963,7 +2963,7 @@ public class AOVExtension {
     }
 
     public static byte[] AOVCompress(byte[] uncompress) {
-        String zstdDictPath = "D:/zstd_dict.bin";
+        String zstdDictPath = "zstd_dict.bin";
         byte[] zstdDict = DHAExtension.ReadAllBytes(zstdDictPath);
         ZstdDictCompress dict = new ZstdDictCompress(zstdDict, 17);
 

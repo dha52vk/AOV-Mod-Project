@@ -27,16 +27,8 @@ public class AOVCustomMod {
         // PC/Documents/AOV/CustomPack/custompack_150/files/Resources/1.50.1/Ages/Prefab_Characters/Prefab_Hero/150_HanXin/skill");
         // taopack();
 
-        try {
-            System.out.println("Loading list icon element...");
-            ListIconElement listIcon = new ListIconElement(DHAExtension.ReadAllBytes("F:/This PC/Documents/AOV/Resources/heroSkin.bytes.decompressed"));
-            System.out.println("Copying...");
-            listIcon.copyIcon(10600, 10611);
-            System.out.println("Writing");
-            DHAExtension.WriteAllBytes("D:/heroSkin.bytes", listIcon.getBytes());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        System.out.println(new File("test").getAbsolutePath());
+        DHAExtension.WriteAllBytes("D:/test.bytes", DHAExtension.ReadAllBytes("zstd_dict.bin"));
     }
 
     public static void findAllActionsResource(String path) {
