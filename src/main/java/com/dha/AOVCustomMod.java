@@ -22,13 +22,14 @@ import com.google.gson.GsonBuilder;
 
 public class AOVCustomMod {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         // findAllActionsResource("F:/This
         // PC/Documents/AOV/CustomPack/custompack_150/files/Resources/1.50.1/Ages/Prefab_Characters/Prefab_Hero/150_HanXin/skill");
         // taopack();
 
-        System.out.println(new File("test").getAbsolutePath());
-        DHAExtension.WriteAllBytes("D:/test.bytes", DHAExtension.ReadAllBytes("zstd_dict.bin"));
+        ListDeviceSupport deviceList = new ListDeviceSupport();
+        deviceList.addNewDevice("Xiaomi 2201117TG");
+        DHAExtension.WriteAllBytes("D:/test.bytes", deviceList.getBytes());
     }
 
     public static void findAllActionsResource(String path) {

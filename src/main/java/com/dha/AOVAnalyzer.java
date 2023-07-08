@@ -57,11 +57,351 @@ public class AOVAnalyzer {
     }
 }
 
-class AnalyzerType{
+class AnalyzerType {
     public static String string = "TypeSystem.String";
     public static String int32 = "TypeSystem.Int32";
     public static String bool = "TypeSystem.Boolean";
     public static String stringArr = "TypeSystem.String[]";
+}
+
+class ListDeviceSupport{
+    public List<String> deviceList;
+
+    public ListDeviceSupport(){
+        deviceList = new ArrayList<>();
+    }
+
+    public ListDeviceSupport(byte[] bytes) {
+        deviceList = new ArrayList<>();
+        int start;
+        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+            start = DHAExtension.bytesToInt(bytes, 132);
+        else
+            start = 0;
+        if (start==bytes.length)
+            return;
+        int count;
+        while (start < bytes.length) {
+            count = DHAExtension.bytesToInt(bytes, start) + 4;
+            String device = new String(Arrays.copyOfRange(bytes, start+12, start + count+2));
+            deviceList.add(device);
+            start += count;
+        }
+    }
+
+    public void addNewDevice(String deviceCode){
+        deviceList.add(deviceCode);
+    }
+
+    public byte[] getBytes(){
+        byte[] bytes = DHAExtension.ReadAllBytes(".special/newmses.bytes");
+        for (int i = 0; i < deviceList.size(); i++){
+            bytes= DHAExtension.mergeBytes(bytes, DHAExtension.toBytes(deviceList.get(i).length()+10),
+                    DHAExtension.toBytes(i+1),
+                    DHAExtension.toBytes(deviceList.get(i).length()+1),
+                    deviceList.get(i).getBytes(), new byte[]{0,0});
+        }
+        return bytes;
+    }
+}
+
+class ListMarkElement {
+    private byte[] bytes;
+    public List<MarkElement> markElements;
+
+    public ListMarkElement(byte[] bytes) {
+        this.bytes = bytes;
+        markElements = new ArrayList<>();
+        int start;
+        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+            start = DHAExtension.bytesToInt(bytes, 132);
+        else
+            start = 0;
+        if (start==bytes.length)
+            return;
+        int count;
+        while (start < bytes.length) {
+            count = DHAExtension.bytesToInt(bytes, start) + 4;
+            MarkElement m = new MarkElement(Arrays.copyOfRange(bytes, start, start + count));
+
+            markElements.add(m);
+            start += count;
+        }
+    }
+
+    public byte[] getBytes() {
+        byte[] childBytes = new byte[0];
+        for (MarkElement m : markElements) {
+            childBytes = DHAExtension.mergeBytes(childBytes, m.getBytes());
+        }
+        int start;
+        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+            start = DHAExtension.bytesToInt(bytes, 132);
+        else
+            start = 0;
+        return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, start), childBytes);
+    }
+}
+
+class MarkElement {
+    private byte[] bytes;
+    public int markId;
+    public String markPath;
+    public List<String> markEffects;
+    public List<Integer> markEffectStarts;
+
+    public MarkElement(byte[] bytes) {
+        this.bytes = Arrays.copyOfRange(bytes, 0, bytes.length);
+        markId = DHAExtension.bytesToInt(bytes, 4);
+        int start, count;
+        start = 12;
+        count = DHAExtension.bytesToInt(bytes, start) + 4;
+        start = start + count;
+        count = DHAExtension.bytesToInt(bytes, start) + 4;
+        start = start + count;
+        count = DHAExtension.bytesToInt(bytes, start) + 4;
+        markPath = new String(Arrays.copyOfRange(bytes, start + 4, start + count - 1));
+        start = start + count + 42;
+        markEffects = new ArrayList<>();
+        markEffectStarts = new ArrayList<>();
+        while (start < bytes.length && DHAExtension.bytesToInt(bytes, start) > 0 && DHAExtension.bytesToInt(bytes, start) < bytes.length-start) {
+            count = DHAExtension.bytesToInt(bytes, start) + 4;
+            String effect = new String(Arrays.copyOfRange(bytes, start + 4, start + count - 1));
+            if (!effect.equals("")) {
+                markEffects.add(effect);
+                markEffectStarts.add(start);
+            }
+            start = start + count;
+        }
+    }
+
+    public void replaceMarkEffect(String target, String replace) {
+        for (int i = 0; i < markEffects.size(); i++) {
+            System.out.println("set at index " + i + ": '" + markEffects.get(i).replaceAll(target, replace)+"'");
+            setMarkEffect(i, markEffects.get(i).replaceAll(target, replace));
+        }
+    }
+
+    public void setMarkEffect(int index, String newMark) {
+        if (index < 0 || index >= markEffects.size()) {
+            return;
+        }
+        int deltalength = newMark.length() - markEffects.get(index).length();
+        bytes = DHAExtension.replaceBytes(bytes, markEffectStarts.get(index) + 4,
+                markEffectStarts.get(index) + DHAExtension.bytesToInt(bytes, markEffectStarts.get(index))+3, newMark.getBytes());
+        markEffects.set(index, newMark);
+        byte[] barr = DHAExtension.toBytes(DHAExtension.bytesToInt(bytes, markEffectStarts.get(index)) + deltalength);
+        for (int i = 0; i < barr.length; i++) {
+            bytes[markEffectStarts.get(index) + i] = barr[i];
+        }
+        for (int i = index + 1; i < markEffectStarts.size(); i++) {
+            System.out.println("increase index " + i + " from " + markEffectStarts.get(i) + " to " + (markEffectStarts.get(i)+deltalength));
+            markEffectStarts.set(i, markEffectStarts.get(i) + deltalength);
+        }
+        barr = DHAExtension.toBytes(bytes.length-4);
+        for (int i = 0; i < barr.length; i++) {
+            bytes[i] = barr[i];
+        }
+    }
+
+    public int getHeroId() {
+        if (markId < 10000)
+            return -1;
+        else if (markId < 100000)
+            return markId / 100;
+        else if (markId < 1000000)
+            return Integer.parseInt((markId + "").substring(1, 4));
+        else
+            return -1;
+    }
+
+    public byte[] getBytes() {
+        return bytes;
+    }
+}
+
+class ListBulletElement {
+    private byte[] bytes;
+    public List<BulletElement> bulletElements;
+
+    public ListBulletElement(byte[] bytes) {
+        this.bytes = bytes;
+        bulletElements = new ArrayList<>();
+        int start;
+        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+            start = DHAExtension.bytesToInt(bytes, 132);
+        else
+            start = 0;
+        if (start==bytes.length)
+            return;
+        int count;
+        while (start < bytes.length) {
+            count = DHAExtension.bytesToInt(bytes, start) + 4;
+            BulletElement b = new BulletElement(Arrays.copyOfRange(bytes, start, start + count));
+            bulletElements.add(b);
+            start += count;
+        }
+    }
+
+    public byte[] getBytes() {
+        byte[] childBytes = new byte[0];
+        for (BulletElement b : bulletElements) {
+            childBytes = DHAExtension.mergeBytes(childBytes, b.getBytes());
+        }
+        int start;
+        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+            start = DHAExtension.bytesToInt(bytes, 132);
+        else
+            start = 0;
+        return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, start), childBytes);
+    }
+}
+
+class BulletElement {
+    private byte[] bytes;
+    private int effectStart;
+    public int bulletId;
+    public byte[] bulletName;
+    public String effectName;
+
+    public BulletElement(byte[] bytes) {
+        this.bytes = Arrays.copyOfRange(bytes, 0, bytes.length);
+        bulletId = DHAExtension.bytesToInt(bytes, 4);
+        int start, count;
+        start = 9;
+        count = DHAExtension.bytesToInt(bytes, start) + 4;
+        bulletName = Arrays.copyOfRange(bytes, start + 4, start + count - 1);
+        start = start + count + 41;
+        effectStart = start;
+        count = DHAExtension.bytesToInt(bytes, start) + 4;
+        effectName = new String(Arrays.copyOfRange(bytes, start + 4, start + count - 1));
+    }
+
+    public void setEffectName(String effect) {
+        bytes = DHAExtension.replaceBytes(bytes, effectStart + 4,
+                effectStart + DHAExtension.bytesToInt(bytes, effectStart) + 3, effect.getBytes());
+        int[] indexChanges = new int[] { 0, effectStart };
+        for (int changeAt : indexChanges) {
+            byte[] barr = DHAExtension.toBytes(bytes.length - changeAt - 4);
+            for (int i = 0; i < barr.length; i++) {
+                bytes[changeAt + i] = barr[i];
+            }
+        }
+    }
+
+    public String getBulletName() {
+        return new String(bulletName);
+    }
+
+    public int getHeroId() {
+        String id = "";
+        String name = new String(bulletName);
+        for (int i = 0; i < name.length(); i++) {
+            if (name.charAt(i) >= '0' && name.charAt(i) <= '9') {
+                id += name.charAt(i);
+            } else {
+                break;
+            }
+        }
+        if (id.length() == 4 && id.charAt(0) == '3') {
+            id = id.substring(1);
+        }
+        if (id.equals(""))
+            id = "-1";
+        return Integer.parseInt(id);
+    }
+
+    public byte[] getBytes() {
+        return bytes;
+    }
+}
+
+class ListSoundElement {
+    private byte[] bytes;
+    public List<SoundElement> soundElements;
+
+    public ListSoundElement(byte[] bytes) {
+        this.bytes = bytes;
+        soundElements = new ArrayList<>();
+        int start;
+        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+            start = DHAExtension.bytesToInt(bytes, 132);
+        else
+            start = 0;
+        if (start==bytes.length)
+            return;
+        int count;
+        while (start < bytes.length) {
+            count = DHAExtension.bytesToInt(bytes, start) + 4;
+            SoundElement s = new SoundElement(Arrays.copyOfRange(bytes, start, start + count));
+            soundElements.add(s);
+            start += count;
+        }
+    }
+
+    public void copySound(int baseId, int targetId) {
+        List<SoundElement> targetSounds = new ArrayList<>();
+        for (int i = 0; i < soundElements.size(); i++) {
+            if (soundElements.get(i).skinId == baseId) {
+                soundElements.remove(i);
+                i--;
+            } else if (soundElements.get(i).skinId == targetId) {
+                SoundElement sound = new SoundElement(soundElements.get(i).getBytes());
+                sound.setSkinId(baseId);
+                targetSounds.add(sound);
+            }
+        }
+        soundElements.addAll(targetSounds);
+    }
+
+    public byte[] getBytes() {
+        byte[] childBytes = new byte[0];
+        for (SoundElement e : soundElements) {
+            childBytes = DHAExtension.mergeBytes(childBytes, e.getBytes());
+        }
+        int start;
+        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+            start = DHAExtension.bytesToInt(bytes, 132);
+        else
+            start = 0;
+        return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, start), childBytes);
+    }
+}
+
+class SoundElement {
+    private byte[] bytes;
+    public final String soundId;
+    public int skinId;
+
+    public SoundElement(byte[] bytes) {
+        this.bytes = Arrays.copyOfRange(bytes, 0, bytes.length);
+        int i = DHAExtension.bytesToInt(bytes, 4);
+        if (i > 9999) {
+            if (i < 100000) {
+                soundId = (i + "").substring(5);
+                skinId = Integer.parseInt((i + "").substring(0, 5));
+            } else {
+                soundId = (i + "").substring(7);
+                skinId = Integer.parseInt((i + "").substring(0, 7));
+            }
+        } else {
+            soundId = i + "";
+            skinId = 0;
+        }
+    }
+
+    public void setSkinId(int skinId) {
+        if (this.skinId == 0)
+            return;
+        bytes = DHAExtension.replaceBytes(bytes, DHAExtension.toBytes(this.skinId), DHAExtension.toBytes(skinId));
+        bytes = DHAExtension.replaceBytes(bytes, DHAExtension.toBytes(Integer.parseInt(this.skinId + soundId)),
+                DHAExtension.toBytes(Integer.parseInt(skinId + soundId)));
+        this.skinId = skinId;
+    }
+
+    public byte[] getBytes() {
+        return bytes;
+    }
 }
 
 class ListLabelElement {
@@ -71,7 +411,13 @@ class ListLabelElement {
     public ListLabelElement(byte[] bytes) {
         this.bytes = bytes;
         labelElements = new ArrayList<>();
-        int start = DHAExtension.bytesToInt(bytes, 132);
+        int start;
+        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+            start = DHAExtension.bytesToInt(bytes, 132);
+        else
+            start = 0;
+        if (start==bytes.length)
+            return;
         int count;
         while (start < bytes.length) {
             count = DHAExtension.bytesToInt(bytes, start) + 4;
@@ -85,7 +431,12 @@ class ListLabelElement {
         for (LabelElement e : labelElements) {
             childBytes = DHAExtension.mergeBytes(childBytes, e.getBytes());
         }
-        return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, DHAExtension.bytesToInt(bytes, 132)), childBytes);
+        int start;
+        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+            start = DHAExtension.bytesToInt(bytes, 132);
+        else
+            start = 0;
+        return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, start), childBytes);
     }
 }
 
@@ -141,7 +492,13 @@ class ListIconElement {
         this.bytes = bytes;
         iconElements = new ArrayList<IconElement>();
         iconIndexDict = new HashMap<Integer, Integer>();
-        int start = DHAExtension.bytesToInt(bytes, 132);
+        int start;
+        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+            start = DHAExtension.bytesToInt(bytes, 132);
+        else
+            start = 0;
+        if (start==bytes.length)
+            return;
         int count;
         while (start < bytes.length) {
             count = DHAExtension.bytesToInt(bytes, start) + 4;
@@ -177,7 +534,12 @@ class ListIconElement {
         for (IconElement e : iconElements) {
             childBytes = DHAExtension.mergeBytes(childBytes, e.getBytes());
         }
-        return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, DHAExtension.bytesToInt(bytes, 132)), childBytes);
+        int start;
+        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+            start = DHAExtension.bytesToInt(bytes, 132);
+        else
+            start = 0;
+        return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, start), childBytes);
     }
 }
 
@@ -191,7 +553,7 @@ class IconElement {
     public String iconCode;
 
     public IconElement(byte[] bytes) {
-        this.bytes = Arrays.copyOfRange(bytes,0,bytes.length);
+        this.bytes = Arrays.copyOfRange(bytes, 0, bytes.length);
 
         iconId = DHAExtension.bytesToInt(bytes, 4);
         iconIndex = DHAExtension.bytesToInt(bytes, 36);

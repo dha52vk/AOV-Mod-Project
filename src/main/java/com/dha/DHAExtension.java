@@ -38,6 +38,8 @@ public class DHAExtension {
     }
 
     public static byte[] replaceBytes(byte[] bytes, byte[] targetBytes, byte[] replaceBytes){
+        if (targetBytes==replaceBytes)
+            return bytes;
         int start=0;
         while ((start = indexOf(bytes, targetBytes, start)) > 0){
             bytes = replaceBytes(bytes, start, start+targetBytes.length, replaceBytes);
