@@ -1,5 +1,9 @@
 package com.dha;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -7,24 +11,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 import com.github.luben.zstd.Zstd;
 import com.github.luben.zstd.ZstdDictCompress;
 
 public class AOVAnalyzer {
-    public static Element replaceStringValue(Element element, String type, String target, String replace) {
-        if (element.jtType == JT.Pri) {
-            if (element.typeS.equals(type)) {
-                element.setValue(element.valueS.replaceAll(target, replace).getBytes());
-            }
-            return element;
-        }
-
-        for (int i = 0; i < element.childList.size(); i++) {
-            element.childList.set(i, replaceStringValue(element.childList.get(i), type, target, replace));
-        }
-
-        return element;
-    }
 
     public static byte[] AOVDecompress(byte[] compressed) {
         String zstdDictPath = "D:/zstd_dict.bin";
@@ -64,10 +70,159 @@ class AnalyzerType {
     public static String stringArr = "TypeSystem.String[]";
 }
 
-class ListDeviceSupport{
+class ProjectXML {
+    private Document doc;
+
+    public ProjectXML(String xml) throws Exception {
+        doc = convertStringToDocument(xml.trim().replaceFirst("^([\\W]+)<", "<"));
+        doc.getDocumentElement().normalize();
+        if (!doc.getDocumentElement().getNodeName().equals("Project"))
+            throw new Exception("isn't Project XML");
+    }
+
+    public void insertActionChild(int index, Node child) {
+        Node actionNode = doc.getElementsByTagName("Action").item(0);
+        child = doc.importNode(child, true);
+        actionNode.insertBefore(child, actionNode.getChildNodes().item(index * 2 + 1));
+    }
+
+    public List<Node> getTrackNodeByName(String trackName) {
+        NodeList trackList = doc.getElementsByTagName("Track");
+        List<Node> targetList = new ArrayList<>();
+        for (int i = 0; i < trackList.getLength(); i++) {
+            Node node = trackList.item(i);
+            if (node.getAttributes().getNamedItem("trackName").getNodeValue().equals(trackName)) {
+                targetList.add(node.cloneNode(true));
+            }
+        }
+        return targetList;
+    }
+
+    public List<Node> getTrackNodeByType(String trackType) {
+        NodeList trackList = doc.getElementsByTagName("Track");
+        List<Node> targetList = new ArrayList<>();
+        for (int i = 0; i < trackList.getLength(); i++) {
+            Node node = trackList.item(i);
+            if (node.getAttributes().getNamedItem("eventType").getNodeValue().equals(trackType)) {
+                targetList.add(node.cloneNode(true));
+            }
+        }
+        return targetList;
+    }
+
+    public Node getCheckSkinTickNode(int trackIndex, int skinId) {
+        return convertStringToDocument("<Track trackName=\"CheckSkinIdTick" + trackIndex
+                + "\" eventType=\"CheckSkinIdTick\" guid=\"Mod_by_DHA_" + skinId
+                + "\" enabled=\"true\" r=\"0.000\" g=\"0.000\" b=\"0.000\" stopAfterLastEvent=\"true\">"
+                + "\n  <Event eventName=\"CheckSkinIdTick\" time=\"0.000\" isDuration=\"false\">"
+                + "\n    <TemplateObject name=\"targetId\" id=\"1\" objectName=\"target\" isTemp=\"false\" refParamName=\"\" useRefParam=\"false\" />"
+                + "\n    <int name=\"skinId\" value=\"" + skinId + "\" refParamName=\"\" useRefParam=\"false\" />"
+                + "\n    <bool name=\"bSkipLogicCheck\" value=\"true\" refParamName=\"\" useRefParam=\"false\" />"
+                + "\n  </Event>"
+                + "\n</Track>").getDocumentElement().cloneNode(true);
+    }
+
+    public Node getCheckHeroTickNode(int trackIndex, int heroId) {
+
+        return convertStringToDocument("<Track trackName=\"CheckHeroIdTick" + trackIndex
+                + "\" eventType=\"CheckHeroIdTick\" guid=\"Mod_by_DHA_" + heroId
+                + "\" enabled=\"true\" r=\"0.000\" g=\"0.000\" b=\"0.000\" stopAfterLastEvent=\"true\">"
+                + "\n  <Event eventName=\"CheckHeroIdTick\" time=\"0.000\" isDuration=\"false\">"
+                + "\n    <TemplateObject name=\"targetId\" id=\"1\" objectName=\"target\" isTemp=\"false\" refParamName=\"\" useRefParam=\"false\" />"
+                + "\n    <int name=\"heroId\" value=\"" + heroId
+                + "\" refParamName=\"\" useRefParam=\"false\" />"
+                + "\n  </Event>"
+                + "\n</Track>").getDocumentElement().cloneNode(true);
+    }
+
+    public void setValue(String tagname, String name, String newValue) {
+        setValue(tagname, name, "", newValue);
+    }
+
+    public void replaceValue(String tagname, String name, String target, String replace) {
+        replaceValue(tagname, name, "", target, replace);
+    }
+
+    public void setValue(String tagname, String name, String parentName, String newValue) {
+        NodeList nodeList = doc.getElementsByTagName(tagname);
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node node = nodeList.item(i);
+            if (parentName.equals("") || node.getParentNode().getAttributes()
+                    .getNamedItem(node.getParentNode().getNodeName().toLowerCase() + "Name").getNodeValue()
+                    .equals(parentName)) {
+                if (node.getAttributes().getNamedItem("name").getNodeValue().equals(name)) {
+                    node.getAttributes().getNamedItem("value").setNodeValue(newValue);
+                }
+            }
+        }
+    }
+
+    public void replaceValue(String tagname, String name, String parentName, String target, String replace) {
+        NodeList nodeList = doc.getElementsByTagName(tagname);
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node node = nodeList.item(i);
+            if (parentName.equals("") || node.getParentNode().getAttributes()
+                    .getNamedItem(node.getParentNode().getNodeName().toLowerCase() + "Name").getNodeValue()
+                    .equals(parentName)) {
+                if (node.getAttributes().getNamedItem("name").getNodeValue().equals(name)) {
+                    node.getAttributes().getNamedItem("value").setNodeValue(
+                            node.getAttributes().getNamedItem("value").getNodeValue().replace(target, replace));
+                }
+            }
+        }
+    }
+
+    public void replaceActionResourceNames(String oldResourceName, String newResourceName) {
+        NodeList stringNode = doc.getElementsByTagName("String");
+        for (int i = 0; i < stringNode.getLength(); i++) {
+            Node node = stringNode.item(i);
+            if (!node.getParentNode().getAttributes().getNamedItem("eventName").getNodeValue()
+                    .equals("TriggerParticleTick")
+                    || !node.getAttributes().getNamedItem("name").getNodeValue().equals("resourceName"))
+                continue;
+            node.getAttributes().getNamedItem("value")
+                    .setNodeValue(node.getAttributes().getNamedItem("value").getNodeValue() + "/testsuccess2");
+        }
+    }
+
+    public String getXmlString() {
+        return convertDocumentToString(doc);
+    }
+
+    private String convertDocumentToString(Document doc) {
+        TransformerFactory tf = TransformerFactory.newInstance();
+        Transformer transformer;
+        try {
+            transformer = tf.newTransformer();
+            StringWriter writer = new StringWriter();
+            transformer.transform(new DOMSource(doc), new StreamResult(writer));
+            String output = writer.getBuffer().toString();
+            return output;
+        } catch (TransformerException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    private Document convertStringToDocument(String xmlStr) {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder;
+        try {
+            builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(new InputSource(new StringReader(xmlStr)));
+            return doc;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+}
+
+class ListDeviceSupport {
     public List<String> deviceList;
 
-    public ListDeviceSupport(){
+    public ListDeviceSupport() {
         deviceList = new ArrayList<>();
     }
 
@@ -78,28 +233,28 @@ class ListDeviceSupport{
             start = DHAExtension.bytesToInt(bytes, 132);
         else
             start = 0;
-        if (start==bytes.length)
+        if (start == bytes.length)
             return;
         int count;
         while (start < bytes.length) {
             count = DHAExtension.bytesToInt(bytes, start) + 4;
-            String device = new String(Arrays.copyOfRange(bytes, start+12, start + count+2));
+            String device = new String(Arrays.copyOfRange(bytes, start + 12, start + count + 2));
             deviceList.add(device);
             start += count;
         }
     }
 
-    public void addNewDevice(String deviceCode){
+    public void addNewDevice(String deviceCode) {
         deviceList.add(deviceCode);
     }
 
-    public byte[] getBytes(){
+    public byte[] getBytes() {
         byte[] bytes = DHAExtension.ReadAllBytes(".special/newmses.bytes");
-        for (int i = 0; i < deviceList.size(); i++){
-            bytes= DHAExtension.mergeBytes(bytes, DHAExtension.toBytes(deviceList.get(i).length()+10),
-                    DHAExtension.toBytes(i+1),
-                    DHAExtension.toBytes(deviceList.get(i).length()+1),
-                    deviceList.get(i).getBytes(), new byte[]{0,0});
+        for (int i = 0; i < deviceList.size(); i++) {
+            bytes = DHAExtension.mergeBytes(bytes, DHAExtension.toBytes(deviceList.get(i).length() + 10),
+                    DHAExtension.toBytes(i + 1),
+                    DHAExtension.toBytes(deviceList.get(i).length() + 1),
+                    deviceList.get(i).getBytes(), new byte[] { 0, 0 });
         }
         return bytes;
     }
@@ -117,7 +272,7 @@ class ListMarkElement {
             start = DHAExtension.bytesToInt(bytes, 132);
         else
             start = 0;
-        if (start==bytes.length)
+        if (start == bytes.length)
             return;
         int count;
         while (start < bytes.length) {
@@ -164,7 +319,8 @@ class MarkElement {
         start = start + count + 42;
         markEffects = new ArrayList<>();
         markEffectStarts = new ArrayList<>();
-        while (start < bytes.length && DHAExtension.bytesToInt(bytes, start) > 0 && DHAExtension.bytesToInt(bytes, start) < bytes.length-start) {
+        while (start < bytes.length && DHAExtension.bytesToInt(bytes, start) > 0
+                && DHAExtension.bytesToInt(bytes, start) < bytes.length - start) {
             count = DHAExtension.bytesToInt(bytes, start) + 4;
             String effect = new String(Arrays.copyOfRange(bytes, start + 4, start + count - 1));
             if (!effect.equals("")) {
@@ -177,7 +333,7 @@ class MarkElement {
 
     public void replaceMarkEffect(String target, String replace) {
         for (int i = 0; i < markEffects.size(); i++) {
-            System.out.println("set at index " + i + ": '" + markEffects.get(i).replaceAll(target, replace)+"'");
+            System.out.println("set at index " + i + ": '" + markEffects.get(i).replaceAll(target, replace) + "'");
             setMarkEffect(i, markEffects.get(i).replaceAll(target, replace));
         }
     }
@@ -188,17 +344,19 @@ class MarkElement {
         }
         int deltalength = newMark.length() - markEffects.get(index).length();
         bytes = DHAExtension.replaceBytes(bytes, markEffectStarts.get(index) + 4,
-                markEffectStarts.get(index) + DHAExtension.bytesToInt(bytes, markEffectStarts.get(index))+3, newMark.getBytes());
+                markEffectStarts.get(index) + DHAExtension.bytesToInt(bytes, markEffectStarts.get(index)) + 3,
+                newMark.getBytes());
         markEffects.set(index, newMark);
         byte[] barr = DHAExtension.toBytes(DHAExtension.bytesToInt(bytes, markEffectStarts.get(index)) + deltalength);
         for (int i = 0; i < barr.length; i++) {
             bytes[markEffectStarts.get(index) + i] = barr[i];
         }
         for (int i = index + 1; i < markEffectStarts.size(); i++) {
-            System.out.println("increase index " + i + " from " + markEffectStarts.get(i) + " to " + (markEffectStarts.get(i)+deltalength));
+            System.out.println("increase index " + i + " from " + markEffectStarts.get(i) + " to "
+                    + (markEffectStarts.get(i) + deltalength));
             markEffectStarts.set(i, markEffectStarts.get(i) + deltalength);
         }
-        barr = DHAExtension.toBytes(bytes.length-4);
+        barr = DHAExtension.toBytes(bytes.length - 4);
         for (int i = 0; i < barr.length; i++) {
             bytes[i] = barr[i];
         }
@@ -232,7 +390,7 @@ class ListBulletElement {
             start = DHAExtension.bytesToInt(bytes, 132);
         else
             start = 0;
-        if (start==bytes.length)
+        if (start == bytes.length)
             return;
         int count;
         while (start < bytes.length) {
@@ -328,7 +486,7 @@ class ListSoundElement {
             start = DHAExtension.bytesToInt(bytes, 132);
         else
             start = 0;
-        if (start==bytes.length)
+        if (start == bytes.length)
             return;
         int count;
         while (start < bytes.length) {
@@ -416,7 +574,7 @@ class ListLabelElement {
             start = DHAExtension.bytesToInt(bytes, 132);
         else
             start = 0;
-        if (start==bytes.length)
+        if (start == bytes.length)
             return;
         int count;
         while (start < bytes.length) {
@@ -497,7 +655,7 @@ class ListIconElement {
             start = DHAExtension.bytesToInt(bytes, 132);
         else
             start = 0;
-        if (start==bytes.length)
+        if (start == bytes.length)
             return;
         int count;
         while (start < bytes.length) {
@@ -885,6 +1043,25 @@ class Element {
             }
         }
         return bytes;
+    }
+
+    public Element replaceValue(String type, String target, String replace){
+        return replaceValue(this, type, target, replace);
+    }
+
+    private Element replaceValue(Element element, String type, String target, String replace) {
+        if (element.jtType == JT.Pri) {
+            if (element.typeS.equals(type)) {
+                element.setValue(element.valueS.replaceAll(target, replace).getBytes());
+            }
+            return element;
+        }
+
+        for (int i = 0; i < element.childList.size(); i++) {
+            element.childList.set(i, replaceValue(element.childList.get(i), type, target, replace));
+        }
+
+        return element;
     }
 }
 

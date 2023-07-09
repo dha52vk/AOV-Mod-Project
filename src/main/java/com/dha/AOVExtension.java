@@ -27,7 +27,7 @@ public class AOVExtension {
     }));
 
     public static List<String> skinNotSwapCheck = new ArrayList<>(Arrays.asList(new String[] {
-            "13211", "14112"
+            "13211", "14112", "1678"
     }));
 
     public static List<String> skinAwaken = new ArrayList<>(Arrays.asList(new String[] {
@@ -904,6 +904,8 @@ public class AOVExtension {
             List<String> linesDance = new ArrayList<>();
 
             for (String filename : new File("F:/This PC/Documents/AOV/cachemod/" + filemodName).list()) {
+                if (filename.contains("back") || filename.contains("born"))
+                    continue;
                 String inputPath = "F:/This PC/Documents/AOV/cachemod/" + filemodName + filename;
                 String outputPath = inputPath;
 
@@ -1006,7 +1008,7 @@ public class AOVExtension {
                     String originIdCode = heroId + (origin < 10 ? "0" + origin : origin);
 
                     for (int i = 0; i < lines.size(); i++) {
-                        if (lines.get(i).contains("CheckSkinIdTick")) {
+                        if (lines.get(i).contains("CheckSkinIdTick") && !skinNotSwapCheck.contains(id)) {
                             int k;
                             boolean kt = false;
                             for (k = i + 1; k < lines.size(); k++) {
@@ -1127,6 +1129,9 @@ public class AOVExtension {
 
                 // content = content.replaceFirst("(?i) <Track", String.join("\n",
                 // checkSkinIdLines) + "\n <Track");
+
+                if (trackEffectLines.size() == 0 && trackSoundLines.size() == 0 && clipAnimLines.size()==0)
+                    continue;
                 content = content.replaceFirst("(?i)  </Action", String.join("\n", checkSkinIdLines) + "\n  </Action");
                 if (trackEffectLines.size() != 0) {
                     content = content.replace("  </Action", String.join("\n", trackEffectLines) + "\n  </Action");
@@ -1841,15 +1846,12 @@ public class AOVExtension {
                         for (Hero hero : App.heroList.heros) {
                             for (Skin s : hero.skins) {
                                 if (skin.label == s.label) {
-                                    bytes = DHAExtension.toBytes(
+                                    newCode = DHAExtension.toBytes(
                                             Integer.parseInt(hero.id) * 100 + Integer.parseInt(s.id.substring(3)) - 1);
-                                    newCode[0] = bytes[0];
-                                    newCode[1] = bytes[1];
 
                                     if ((start = DHAExtension.indexOf(outputBytes,
                                             DHAExtension.mergeBytes(newCode,
-                                                    new byte[] { 0, 0 },
-                                                    DHAExtension.toBytes(Integer.parseInt(hero.id))))
+                                                    DHAExtension.toBytes(Integer.parseInt(s.id.substring(0,3)))))
                                             - 4) > 0) {
                                         System.out
                                                 .println("not found start for id " + targetId + " so changed to " + s.id
