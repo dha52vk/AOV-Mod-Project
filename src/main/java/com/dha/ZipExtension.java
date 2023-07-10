@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -98,8 +99,13 @@ public class ZipExtension {
     }
 
     public static void zipDir(String dirPath, OutputStream fos) {
+        zipDir(dirPath, fos, Deflater.NO_COMPRESSION);
+    }
+
+    public static void zipDir(String dirPath, OutputStream fos, int compressLevel){
         try {
             ZipOutputStream zipOut = new ZipOutputStream(fos);
+            zipOut.setLevel(compressLevel);
             File fileToZip = new File(dirPath);
             zipFile(fileToZip, fileToZip.getName(), zipOut);
             zipOut.close();

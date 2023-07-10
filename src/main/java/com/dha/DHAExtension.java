@@ -74,6 +74,15 @@ public class DHAExtension {
         return (str.length() - str.replace(substr, "").length()) / substr.length();
     }
 
+    public static int countMatches(byte[] outerBytes, byte[] smallerBytes){
+        int count=0;
+        int start=-1;
+        while ((start=indexOf(outerBytes, smallerBytes, start+1)) > 0){
+            count++;
+        }
+        return count;
+    }
+
     public static byte[] mergeBytes(byte[]... bytess) {
         byte[] dest = new byte[0];
         for (byte[] bytes : bytess) {

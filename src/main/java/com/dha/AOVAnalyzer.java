@@ -25,7 +25,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 import com.github.luben.zstd.Zstd;
 import com.github.luben.zstd.ZstdDictCompress;
@@ -86,6 +85,12 @@ class ProjectXML {
         actionNode.insertBefore(child, actionNode.getChildNodes().item(index * 2 + 1));
     }
 
+    public void appendActionChild(Node child) {
+        Node actionNode = doc.getElementsByTagName("Action").item(0);
+        child = doc.importNode(child, true);
+        actionNode.appendChild(child);
+    }
+
     public List<Node> getTrackNodeByName(String trackName) {
         NodeList trackList = doc.getElementsByTagName("Track");
         List<Node> targetList = new ArrayList<>();
@@ -108,6 +113,12 @@ class ProjectXML {
             }
         }
         return targetList;
+    }
+
+    public Node getConditionNode(int conditionIndex, String guid) {
+        return convertStringToDocument(
+                "      <Condition id=\"" + conditionIndex + "\" guid=\"" + guid + "\" status=\"true\"/>")
+                .getDocumentElement().cloneNode(true);
     }
 
     public Node getCheckSkinTickNode(int trackIndex, int skinId) {
@@ -306,7 +317,7 @@ class MarkElement {
     public List<Integer> markEffectStarts;
 
     public MarkElement(byte[] bytes) {
-        this.bytes = Arrays.copyOfRange(bytes, 0, bytes.length);
+        this.bytes = bytes.clone();
         markId = DHAExtension.bytesToInt(bytes, 4);
         int start, count;
         start = 12;
@@ -423,7 +434,7 @@ class BulletElement {
     public String effectName;
 
     public BulletElement(byte[] bytes) {
-        this.bytes = Arrays.copyOfRange(bytes, 0, bytes.length);
+        this.bytes = bytes.clone();
         bulletId = DHAExtension.bytesToInt(bytes, 4);
         int start, count;
         start = 9;
@@ -467,6 +478,82 @@ class BulletElement {
         if (id.equals(""))
             id = "-1";
         return Integer.parseInt(id);
+    }
+
+    public byte[] getBytes() {
+        return bytes;
+    }
+}
+
+class ListCharComponent{
+    private byte[] bytes;
+    public List<CharComponent> charComponents;
+
+    public ListCharComponent(byte[] bytes) {
+        this.bytes = bytes;
+        charComponents = new ArrayList<>();
+        int start;
+        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+            start = DHAExtension.bytesToInt(bytes, 132);
+        else
+            start = 0;
+        if (start == bytes.length)
+            return;
+        int count;
+        while (start < bytes.length) {
+            count = DHAExtension.bytesToInt(bytes, start) + 4;
+            CharComponent s = new CharComponent(Arrays.copyOfRange(bytes, start, start + count));
+            charComponents.add(s);
+            start += count;
+        }
+    }
+
+    public void removeSkinComponent(int skinId){
+        for (int i = 0; i < charComponents.size(); i++){
+            if (charComponents.get(i).containsId(skinId)){
+                charComponents.remove(i);
+                i--;
+            }
+        }
+    }
+
+    public byte[] getBytes() {
+        byte[] childBytes = new byte[0];
+        for (CharComponent e : charComponents) {
+            childBytes = DHAExtension.mergeBytes(childBytes, e.getBytes());
+        }
+        int start;
+        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+            start = DHAExtension.bytesToInt(bytes, 132);
+        else
+            start = 0;
+        return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, start), childBytes);
+    }
+}
+
+class CharComponent{
+    private byte[] bytes;
+    public final int componentId;
+    public List<Integer> skinIdList;
+
+    public CharComponent(byte[] bytes) {
+        this.bytes = bytes.clone();
+        skinIdList = new ArrayList<>();
+        componentId = DHAExtension.bytesToInt(bytes, 4);
+        
+        int start=155;
+        if (DHAExtension.countMatches(bytes, "_##".getBytes()) ==2){
+            start = 174;
+        }
+        int skinId;
+        while((skinId = DHAExtension.bytesToInt(bytes, start)) > 9999 && skinId < 100000){
+            skinIdList.add(skinId);
+            start+=29;
+        }
+    }
+
+    public boolean containsId(int skinId){
+        return skinIdList.contains(skinId);
     }
 
     public byte[] getBytes() {
@@ -532,7 +619,7 @@ class SoundElement {
     public int skinId;
 
     public SoundElement(byte[] bytes) {
-        this.bytes = Arrays.copyOfRange(bytes, 0, bytes.length);
+        this.bytes = bytes.clone();
         int i = DHAExtension.bytesToInt(bytes, 4);
         if (i > 9999) {
             if (i < 100000) {
@@ -711,7 +798,7 @@ class IconElement {
     public String iconCode;
 
     public IconElement(byte[] bytes) {
-        this.bytes = Arrays.copyOfRange(bytes, 0, bytes.length);
+        this.bytes = bytes.clone();
 
         iconId = DHAExtension.bytesToInt(bytes, 4);
         iconIndex = DHAExtension.bytesToInt(bytes, 36);
@@ -775,9 +862,10 @@ class Element {
     public String valueS = null;
     public JT jtType;
     public List<Element> childList;
+    public Map<String, Element> childMap;
 
     public Element(JT type) throws Exception {
-        bytes = DHAExtension.ReadAllBytes("resources/jt" + type + ".bytes");
+        bytes = DHAExtension.ReadAllBytes(".special/jt" + type + ".bytes");
         int space = 4;
         int start = 4;
         int count = DHAExtension.bytesToInt(bytes, start);
@@ -823,6 +911,7 @@ class Element {
                     childCount = DHAExtension.bytesToInt(bytes, start);
                 }
                 childList = new ArrayList<Element>();
+                childMap = new HashMap<>();
 
                 start += 4;
                 for (int i = 0; i < childCount; i++) {
@@ -830,7 +919,13 @@ class Element {
                     if (start + count > bytes.length) {
                         throw new Exception("invalid size");
                     }
-                    childList.add(new Element(Arrays.copyOfRange(bytes, start, start + count)));
+                    Element e = new Element(Arrays.copyOfRange(bytes, start, start + count));
+                    childList.add(e);
+                    if (jtType == JT.Arr) {
+                        childMap.put(e.nameS + i, e);
+                    } else {
+                        childMap.put(e.nameS, e);
+                    }
                     start += count;
                 }
                 setValue(jt);
@@ -851,12 +946,12 @@ class Element {
 
     public Element(byte[] bytes) throws Exception {
         if (bytes == null) {
-            throw new NullPointerException();
+            throw new Exception("null exception");
         }
         if (bytes.length != DHAExtension.bytesToInt(bytes, 0)) {
             throw new Exception("invalid size: " + bytes.length + " - " + DHAExtension.bytesToInt(bytes, 0));
         }
-        this.bytes = bytes;
+        this.bytes = bytes.clone();
 
         int space = 4;
         int start = 4;
@@ -871,6 +966,11 @@ class Element {
         if (count < space)
             throw new Exception("invalid count at " + start);
         String jt = new String(Arrays.copyOfRange(bytes, start + space, start + count));
+
+        if (jt.equals("NULLY")){
+            jtType = JT.Null;
+            return;
+        }
 
         space = 8;
         start += count;
@@ -903,6 +1003,7 @@ class Element {
                     childCount = DHAExtension.bytesToInt(bytes, start);
                 }
                 childList = new ArrayList<Element>();
+                childMap = new HashMap<>();
 
                 start += 4;
                 for (int i = 0; i < childCount; i++) {
@@ -910,7 +1011,13 @@ class Element {
                     if (start + count > bytes.length) {
                         throw new Exception("invalid size");
                     }
-                    childList.add(new Element(Arrays.copyOfRange(bytes, start, start + count)));
+                    Element e = new Element(Arrays.copyOfRange(bytes, start, start + count));
+                    childList.add(e);
+                    if (jtType == JT.Arr) {
+                        childMap.put(e.nameS + i, e);
+                    } else {
+                        childMap.put(e.nameS, e);
+                    }
                     start += count;
                 }
                 setValue(jt);
@@ -929,6 +1036,30 @@ class Element {
         }
     }
 
+    public Element getChild(String name) {
+        if (!containsChild(name))
+            return null;
+        return childMap.get(name);
+    }
+
+    public Element getChild(int index){
+        if (index < 0 || index >= childList.size())
+            return null;
+        return childList.get(index);
+    }
+
+    public Element clone(){
+        try {
+            return new Element(bytes);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public boolean containsChild(String name){
+        return childMap.containsKey(name);
+    }
+
     public void removeChildAt(int index) {
         if (childList != null && index < childList.size()) {
             childList.remove(index);
@@ -942,6 +1073,25 @@ class Element {
             bytes = DHAExtension.mergeBytes(bytes, new byte[] { 1, 0, 0, 0 });
         }
         childList.add(e);
+        childMap.put(e.nameS, e);
+    }
+
+    public void addChild(int index, Element e) {
+        if (childList == null || index <0 || index > childList.size())
+            return;
+        if (childList.size() == 0) {
+            bytes = DHAExtension.mergeBytes(bytes, new byte[] { 1, 0, 0, 0 });
+        }
+        childList.add(index, e);
+        childMap.put(e.nameS, e);
+    }
+
+    public void setChild(int index, Element e){
+        if (childList == null || index <0 || index >= childList.size())
+            return;
+        childMap.remove(childList.get(index).nameS);
+        childList.set(index, e);
+        childMap.put(e.nameS, e);
     }
 
     public void setName(String name) {
@@ -1045,7 +1195,7 @@ class Element {
         return bytes;
     }
 
-    public Element replaceValue(String type, String target, String replace){
+    public Element replaceValue(String type, String target, String replace) {
         return replaceValue(this, type, target, replace);
     }
 
@@ -1063,8 +1213,12 @@ class Element {
 
         return element;
     }
+
+    public int getChildLength() {
+        return childList.size();
+    }
 }
 
 enum JT {
-    Com, Arr, Cus, Pri
+    Com, Arr, Cus, Pri, Null
 }

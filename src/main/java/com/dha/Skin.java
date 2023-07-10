@@ -16,10 +16,27 @@ public class Skin {
     public String[] specialChangeOld;
     public String[] specialChangeNew;
     public String[] filenameNotMod;    
+
+    public Skin(){}
+
+    public Skin(String skinId, SkinLabel label){
+        id = skinId;
+    }
+
+    @Override
+    public String toString(){
+        return name + "(" + id + ")";
+    }
 }
 
 enum SkinLabel{
-    Default,
-    A, S, S_Plus, SS, SSS_HH,
-    A_HH, S_HH, S_Plus_HH, SS_HH, SS_Chroma
+    Default(0),
+    A(1), S(2), S_Plus(3), SS(4), SSS_HH(5),
+    A_HH(1), S_HH(2), S_Plus_HH(3), SS_HH(4), SS_Chroma(4);
+
+    final int skinLevel;
+
+    private SkinLabel(int skinLevel){
+        this.skinLevel = skinLevel;
+    }
 }

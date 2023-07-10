@@ -26,11 +26,11 @@ public class AOVCustomMod {
         // findAllActionsResource("F:/This
         // PC/Documents/AOV/CustomPack/custompack_150/files/Resources/1.50.1/Ages/Prefab_Characters/Prefab_Hero/150_HanXin/skill");
         // taopack();
-
-        ProjectXML project = new ProjectXML(DHAExtension.ReadAllText("D:/A1.xml"));
-        project.setValue("String", "eventName", "PlayHeroSoundTick", "testsuccess");
-        project.insertActionChild(1, project.getCheckSkinTickNode(0, 16701));
-        DHAExtension.WriteAllText("D:/a.xml", project.getXmlString());
+        
+        ListCharComponent listChar = new ListCharComponent(DHAExtension.ReadAllBytes("F:\\This PC\\Documents\\AOV\\Resources\\ResCharacterComponent.bytes.decompressed"));
+        listChar.removeSkinComponent(11600);
+        DHAExtension.WriteAllBytes("D:/test.bytes", listChar.getBytes());
+        
         // ListDeviceSupport listDevices = new ListDeviceSupport();
         // listDevices.addNewDevice("Xiaomi 2201117TG");
         // DHAExtension.WriteAllBytes("D:/VeryHighFrameModeBlackList.bytes", listDevices.getBytes());
