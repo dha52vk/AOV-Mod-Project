@@ -27,13 +27,16 @@ public class AOVCustomMod {
         // PC/Documents/AOV/CustomPack/custompack_150/files/Resources/1.50.1/Ages/Prefab_Characters/Prefab_Hero/150_HanXin/skill");
         // taopack();
         
-        ListCharComponent listChar = new ListCharComponent(DHAExtension.ReadAllBytes("F:\\This PC\\Documents\\AOV\\Resources\\ResCharacterComponent.bytes.decompressed"));
-        listChar.removeSkinComponent(11600);
-        DHAExtension.WriteAllBytes("D:/test.bytes", listChar.getBytes());
+        StringOperator operator = (s)->s.replace("con", "new");
+        System.out.println(get(operator));
         
         // ListDeviceSupport listDevices = new ListDeviceSupport();
         // listDevices.addNewDevice("Xiaomi 2201117TG");
         // DHAExtension.WriteAllBytes("D:/VeryHighFrameModeBlackList.bytes", listDevices.getBytes());
+    }
+
+    public static String get(StringOperator operator){
+        return operator.handle("content");
     }
 
     public static void findAllActionsResource(String path) {

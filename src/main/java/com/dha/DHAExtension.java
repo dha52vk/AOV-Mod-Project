@@ -231,7 +231,8 @@ public class DHAExtension {
             for (String line : lines) {
                 content.append(line).append("\n");
             }
-            content.deleteCharAt(content.length() - 1);
+            if (lines.length > 0)
+                content.deleteCharAt(content.length() - 1);
             FileOutputStream fileOut = new FileOutputStream(fileName);
             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOut);
             outputStreamWriter.write(content.toString());

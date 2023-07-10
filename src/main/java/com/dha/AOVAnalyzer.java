@@ -21,6 +21,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.w3c.dom.Comment;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -79,6 +80,11 @@ class ProjectXML {
             throw new Exception("isn't Project XML");
     }
 
+    public void addComment(String commentText) {
+        Comment comment = doc.createComment(commentText);
+        doc.getElementsByTagName("Action").item(0).appendChild(comment);
+    }
+
     public void insertActionChild(int index, Node child) {
         Node actionNode = doc.getElementsByTagName("Action").item(0);
         child = doc.importNode(child, true);
@@ -91,25 +97,55 @@ class ProjectXML {
         actionNode.appendChild(child);
     }
 
+    public NodeList getNodeListByTagName(String tagName){
+        return doc.getElementsByTagName(tagName);
+    }
+
     public List<Node> getTrackNodeByName(String trackName) {
+        return getTrackNodeByName(trackName, true);
+    }
+
+    public List<Node> getTrackNodeByName(String trackName, boolean clone) {
         NodeList trackList = doc.getElementsByTagName("Track");
         List<Node> targetList = new ArrayList<>();
         for (int i = 0; i < trackList.getLength(); i++) {
             Node node = trackList.item(i);
             if (node.getAttributes().getNamedItem("trackName").getNodeValue().equals(trackName)) {
-                targetList.add(node.cloneNode(true));
+                if (clone)
+                    targetList.add(node.cloneNode(true));
+                else
+                    targetList.add(node);
             }
         }
         return targetList;
     }
 
     public List<Node> getTrackNodeByType(String trackType) {
+        return getTrackNodeByName(trackType, true);
+    }
+
+    public List<Node> getTrackNodeByType(String trackType, boolean clone) {
         NodeList trackList = doc.getElementsByTagName("Track");
         List<Node> targetList = new ArrayList<>();
         for (int i = 0; i < trackList.getLength(); i++) {
             Node node = trackList.item(i);
             if (node.getAttributes().getNamedItem("eventType").getNodeValue().equals(trackType)) {
+                if (clone)
                 targetList.add(node.cloneNode(true));
+                else
+                targetList.add(node);
+            }
+        }
+        return targetList;
+    }
+
+    public List<Integer> getTrackIndexByType(String trackType) {
+        NodeList trackList = doc.getElementsByTagName("Track");
+        List<Integer> targetList = new ArrayList<>();
+        for (int i = 0; i < trackList.getLength(); i++) {
+            Node node = trackList.item(i);
+            if (node.getAttributes().getNamedItem("eventType").getNodeValue().equals(trackType)) {
+                targetList.add(i);
             }
         }
         return targetList;
@@ -150,34 +186,56 @@ class ProjectXML {
         setValue(tagname, name, "", newValue);
     }
 
-    public void replaceValue(String tagname, String name, String target, String replace) {
-        replaceValue(tagname, name, "", target, replace);
+    public void replaceValue(String tagname, String name, String regex, String replace) {
+        replaceValue(tagname, name, "", regex, replace);
     }
 
     public void setValue(String tagname, String name, String parentName, String newValue) {
         NodeList nodeList = doc.getElementsByTagName(tagname);
         for (int i = 0; i < nodeList.getLength(); i++) {
             Node node = nodeList.item(i);
-            if (parentName.equals("") || node.getParentNode().getAttributes()
-                    .getNamedItem(node.getParentNode().getNodeName().toLowerCase() + "Name").getNodeValue()
-                    .equals(parentName)) {
-                if (node.getAttributes().getNamedItem("name").getNodeValue().equals(name)) {
+            Node parentNameNode = node.getParentNode().getAttributes()
+                    .getNamedItem(node.getParentNode().getNodeName().toLowerCase() + "Name");
+            if (parentName.equals("") || (parentNameNode != null && parentNameNode.getNodeValue().equals(parentName))) {
+                Node nameNode = node.getAttributes().getNamedItem("name");
+                if (nameNode != null && nameNode.getNodeValue().equals(name)) {
                     node.getAttributes().getNamedItem("value").setNodeValue(newValue);
                 }
             }
         }
     }
 
-    public void replaceValue(String tagname, String name, String parentName, String target, String replace) {
+    public void setValue(String tagname, String name, StringOperator operator) {
+        setValue(tagname, name, "", operator);
+    }
+
+    public void setValue(String tagname, String name, String parentName, StringOperator operator) {
         NodeList nodeList = doc.getElementsByTagName(tagname);
         for (int i = 0; i < nodeList.getLength(); i++) {
             Node node = nodeList.item(i);
-            if (parentName.equals("") || node.getParentNode().getAttributes()
-                    .getNamedItem(node.getParentNode().getNodeName().toLowerCase() + "Name").getNodeValue()
-                    .equals(parentName)) {
-                if (node.getAttributes().getNamedItem("name").getNodeValue().equals(name)) {
+            Node parentNameNode = node.getParentNode().getAttributes()
+                    .getNamedItem(node.getParentNode().getNodeName().toLowerCase() + "Name");
+            if (parentName.equals("") || (parentNameNode != null && parentNameNode.getNodeValue().equals(parentName))) {
+                Node nameNode = node.getAttributes().getNamedItem("name");
+                if (nameNode != null && nameNode.getNodeValue().equals(name)) {
+                    node.getAttributes().getNamedItem("value")
+                            .setNodeValue(operator.handle(node.getAttributes().getNamedItem("value").getNodeValue()));
+                }
+            }
+        }
+    }
+
+    public void replaceValue(String tagname, String name, String parentName, String regex, String replace) {
+        NodeList nodeList = doc.getElementsByTagName(tagname);
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node node = nodeList.item(i);
+            Node parentNameNode = node.getParentNode().getAttributes()
+                    .getNamedItem(node.getParentNode().getNodeName().toLowerCase() + "Name");
+            if (parentName.equals("") || (parentNameNode != null && parentNameNode.getNodeValue().equals(parentName))) {
+                Node nameNode = node.getAttributes().getNamedItem("name");
+                if (nameNode != null && nameNode.getNodeValue().equals(name)) {
                     node.getAttributes().getNamedItem("value").setNodeValue(
-                            node.getAttributes().getNamedItem("value").getNodeValue().replace(target, replace));
+                            node.getAttributes().getNamedItem("value").getNodeValue().replaceAll(regex, replace));
                 }
             }
         }
@@ -200,7 +258,18 @@ class ProjectXML {
         return convertDocumentToString(doc);
     }
 
-    private String convertDocumentToString(Document doc) {
+    public static String nodeToString(Node node) {
+        StringWriter sw = new StringWriter();
+        try {
+            Transformer t = TransformerFactory.newInstance().newTransformer();
+            t.transform(new DOMSource(node), new StreamResult(sw));
+        } catch (TransformerException te) {
+            te.printStackTrace();
+        }
+        return sw.toString();
+    }
+
+    public static String convertDocumentToString(Document doc) {
         TransformerFactory tf = TransformerFactory.newInstance();
         Transformer transformer;
         try {
@@ -216,7 +285,7 @@ class ProjectXML {
         return null;
     }
 
-    private Document convertStringToDocument(String xmlStr) {
+    public static Document convertStringToDocument(String xmlStr) {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder;
         try {
@@ -228,6 +297,10 @@ class ProjectXML {
         }
         return null;
     }
+}
+
+interface StringOperator {
+    public String handle(String s);
 }
 
 class ListDeviceSupport {
@@ -485,7 +558,7 @@ class BulletElement {
     }
 }
 
-class ListCharComponent{
+class ListCharComponent {
     private byte[] bytes;
     public List<CharComponent> charComponents;
 
@@ -508,9 +581,9 @@ class ListCharComponent{
         }
     }
 
-    public void removeSkinComponent(int skinId){
-        for (int i = 0; i < charComponents.size(); i++){
-            if (charComponents.get(i).containsId(skinId)){
+    public void removeSkinComponent(int skinId) {
+        for (int i = 0; i < charComponents.size(); i++) {
+            if (charComponents.get(i).containsId(skinId)) {
                 charComponents.remove(i);
                 i--;
             }
@@ -531,7 +604,7 @@ class ListCharComponent{
     }
 }
 
-class CharComponent{
+class CharComponent {
     private byte[] bytes;
     public final int componentId;
     public List<Integer> skinIdList;
@@ -540,19 +613,19 @@ class CharComponent{
         this.bytes = bytes.clone();
         skinIdList = new ArrayList<>();
         componentId = DHAExtension.bytesToInt(bytes, 4);
-        
-        int start=155;
-        if (DHAExtension.countMatches(bytes, "_##".getBytes()) ==2){
+
+        int start = 155;
+        if (DHAExtension.countMatches(bytes, "_##".getBytes()) == 2) {
             start = 174;
         }
         int skinId;
-        while((skinId = DHAExtension.bytesToInt(bytes, start)) > 9999 && skinId < 100000){
+        while ((skinId = DHAExtension.bytesToInt(bytes, start)) > 9999 && skinId < 100000) {
             skinIdList.add(skinId);
-            start+=29;
+            start += 29;
         }
     }
 
-    public boolean containsId(int skinId){
+    public boolean containsId(int skinId) {
         return skinIdList.contains(skinId);
     }
 
@@ -599,6 +672,19 @@ class ListSoundElement {
         soundElements.addAll(targetSounds);
     }
 
+    public void setSound(int baseId, List<SoundElement> targetSounds){
+        for (int i = 0; i < soundElements.size(); i++) {
+            if (soundElements.get(i).skinId == baseId) {
+                soundElements.remove(i);
+                i--;
+            }
+        }
+        for (int i = 0; i < targetSounds.size(); i++){
+            targetSounds.get(i).setSkinId(baseId);
+        }
+        soundElements.addAll(targetSounds);
+    }
+
     public byte[] getBytes() {
         byte[] childBytes = new byte[0];
         for (SoundElement e : soundElements) {
@@ -621,8 +707,8 @@ class SoundElement {
     public SoundElement(byte[] bytes) {
         this.bytes = bytes.clone();
         int i = DHAExtension.bytesToInt(bytes, 4);
-        if (i > 9999) {
-            if (i < 100000) {
+        if (i > 99999) {
+            if (i < 10000000) {
                 soundId = (i + "").substring(5);
                 skinId = Integer.parseInt((i + "").substring(0, 5));
             } else {
@@ -967,7 +1053,7 @@ class Element {
             throw new Exception("invalid count at " + start);
         String jt = new String(Arrays.copyOfRange(bytes, start + space, start + count));
 
-        if (jt.equals("NULLY")){
+        if (jt.equals("NULLY")) {
             jtType = JT.Null;
             return;
         }
@@ -1042,13 +1128,13 @@ class Element {
         return childMap.get(name);
     }
 
-    public Element getChild(int index){
+    public Element getChild(int index) {
         if (index < 0 || index >= childList.size())
             return null;
         return childList.get(index);
     }
 
-    public Element clone(){
+    public Element clone() {
         try {
             return new Element(bytes);
         } catch (Exception e) {
@@ -1056,7 +1142,7 @@ class Element {
         }
     }
 
-    public boolean containsChild(String name){
+    public boolean containsChild(String name) {
         return childMap.containsKey(name);
     }
 
@@ -1077,7 +1163,7 @@ class Element {
     }
 
     public void addChild(int index, Element e) {
-        if (childList == null || index <0 || index > childList.size())
+        if (childList == null || index < 0 || index > childList.size())
             return;
         if (childList.size() == 0) {
             bytes = DHAExtension.mergeBytes(bytes, new byte[] { 1, 0, 0, 0 });
@@ -1086,8 +1172,8 @@ class Element {
         childMap.put(e.nameS, e);
     }
 
-    public void setChild(int index, Element e){
-        if (childList == null || index <0 || index >= childList.size())
+    public void setChild(int index, Element e) {
+        if (childList == null || index < 0 || index >= childList.size())
             return;
         childMap.remove(childList.get(index).nameS);
         childList.set(index, e);

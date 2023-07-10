@@ -69,7 +69,10 @@ public class ModNew {
                     }
                 }
                 modList.add(new ModInfo(targetSkins, skin, modSettings));
+                long start = System.currentTimeMillis();
                 modHelper.modSkin(modList);
+                long end = System.currentTimeMillis();
+                System.out.println("Mod xong sau " + (end - start) / 1000f + " giay");
                 continue;
             } else if (luachon.equals("2")) {
                 System.out.print("Nhap ten pack: ");
