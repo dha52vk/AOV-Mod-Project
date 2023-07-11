@@ -74,7 +74,7 @@ class ProjectXML {
     private Document doc;
 
     public ProjectXML(String xml) throws Exception {
-        doc = convertStringToDocument(xml.trim().replaceFirst("^([\\W]+)<", "<"));
+        doc = convertStringToDocument(xml);
         doc.getDocumentElement().normalize();
         if (!doc.getDocumentElement().getNodeName().equals("Project"))
             throw new Exception("isn't Project XML");
@@ -88,7 +88,17 @@ class ProjectXML {
     public void insertActionChild(int index, Node child) {
         Node actionNode = doc.getElementsByTagName("Action").item(0);
         child = doc.importNode(child, true);
-        actionNode.insertBefore(child, actionNode.getChildNodes().item(index * 2 + 1));
+        int trackCount = 0;
+        for (int i = 0; i < actionNode.getChildNodes().getLength(); i++){
+            if (actionNode.getChildNodes().item(i).getNodeName().equals("Track")){
+                trackCount++;
+                if (trackCount == index+1){
+                    index = i;
+                    break;
+                }
+            }
+        }
+        actionNode.insertBefore(child, actionNode.getChildNodes().item(index));
     }
 
     public void appendActionChild(Node child) {
@@ -121,7 +131,7 @@ class ProjectXML {
     }
 
     public List<Node> getTrackNodeByType(String trackType) {
-        return getTrackNodeByName(trackType, true);
+        return getTrackNodeByType(trackType, true);
     }
 
     public List<Node> getTrackNodeByType(String trackType, boolean clone) {
@@ -151,15 +161,19 @@ class ProjectXML {
         return targetList;
     }
 
-    public Node getConditionNode(int conditionIndex, String guid) {
+    public static Node getConditionNode(int conditionIndex, String guid) {
+        return getConditionNode(conditionIndex, guid, true);
+    }
+
+    public static Node getConditionNode(int conditionIndex, String guid, boolean status) {
         return convertStringToDocument(
-                "      <Condition id=\"" + conditionIndex + "\" guid=\"" + guid + "\" status=\"true\"/>")
+                "      <Condition id=\"" + conditionIndex + "\" guid=\"" + guid + "\" status=\"" + (status) + "\"/>")
                 .getDocumentElement().cloneNode(true);
     }
 
-    public Node getCheckSkinTickNode(int trackIndex, int skinId) {
+    public static Node getCheckSkinTickNode(int trackIndex, int skinId) {
         return convertStringToDocument("<Track trackName=\"CheckSkinIdTick" + trackIndex
-                + "\" eventType=\"CheckSkinIdTick\" guid=\"Mod_by_DHA_" + skinId
+                + "\" eventType=\"CheckSkinIdTick\" guid=\"Mod_by_" + AOVModHelper.ChannelName + "_" + skinId
                 + "\" enabled=\"true\" r=\"0.000\" g=\"0.000\" b=\"0.000\" stopAfterLastEvent=\"true\">"
                 + "\n  <Event eventName=\"CheckSkinIdTick\" time=\"0.000\" isDuration=\"false\">"
                 + "\n    <TemplateObject name=\"targetId\" id=\"1\" objectName=\"target\" isTemp=\"false\" refParamName=\"\" useRefParam=\"false\" />"
@@ -169,10 +183,10 @@ class ProjectXML {
                 + "\n</Track>").getDocumentElement().cloneNode(true);
     }
 
-    public Node getCheckHeroTickNode(int trackIndex, int heroId) {
+    public static Node getCheckHeroTickNode(int trackIndex, int heroId) {
 
         return convertStringToDocument("<Track trackName=\"CheckHeroIdTick" + trackIndex
-                + "\" eventType=\"CheckHeroIdTick\" guid=\"Mod_by_DHA_" + heroId
+                + "\" eventType=\"CheckHeroIdTick\" guid=\"Mod_by_" + AOVModHelper.ChannelName + "_" + heroId
                 + "\" enabled=\"true\" r=\"0.000\" g=\"0.000\" b=\"0.000\" stopAfterLastEvent=\"true\">"
                 + "\n  <Event eventName=\"CheckHeroIdTick\" time=\"0.000\" isDuration=\"false\">"
                 + "\n    <TemplateObject name=\"targetId\" id=\"1\" objectName=\"target\" isTemp=\"false\" refParamName=\"\" useRefParam=\"false\" />"
@@ -206,10 +220,18 @@ class ProjectXML {
     }
 
     public void setValue(String tagname, String name, StringOperator operator) {
-        setValue(tagname, name, "", operator);
+        setValue(tagname, new String[]{name}, "", operator);
+    }
+
+    public void setValue(String tagname, String[] nameArr, StringOperator operator) {
+        setValue(tagname, nameArr, "", operator);
     }
 
     public void setValue(String tagname, String name, String parentName, StringOperator operator) {
+        setValue(tagname, new String[]{name}, parentName, operator);
+    }
+
+    public void setValue(String tagname, String[] nameArr, String parentName, StringOperator operator) {
         NodeList nodeList = doc.getElementsByTagName(tagname);
         for (int i = 0; i < nodeList.getLength(); i++) {
             Node node = nodeList.item(i);
@@ -217,7 +239,7 @@ class ProjectXML {
                     .getNamedItem(node.getParentNode().getNodeName().toLowerCase() + "Name");
             if (parentName.equals("") || (parentNameNode != null && parentNameNode.getNodeValue().equals(parentName))) {
                 Node nameNode = node.getAttributes().getNamedItem("name");
-                if (nameNode != null && nameNode.getNodeValue().equals(name)) {
+                if (nameNode != null && (nameArr.length==0 || Arrays.asList(nameArr).contains(nameNode.getNodeValue()))) {
                     node.getAttributes().getNamedItem("value")
                             .setNodeValue(operator.handle(node.getAttributes().getNamedItem("value").getNodeValue()));
                 }
@@ -286,6 +308,7 @@ class ProjectXML {
     }
 
     public static Document convertStringToDocument(String xmlStr) {
+        xmlStr = xmlStr.trim().replaceFirst("^([\\W]+)<", "<");
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder;
         try {
@@ -349,7 +372,7 @@ class ListMarkElement {
     public List<MarkElement> markElements;
 
     public ListMarkElement(byte[] bytes) {
-        this.bytes = bytes;
+        this.bytes = bytes.clone();
         markElements = new ArrayList<>();
         int start;
         if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
@@ -365,6 +388,14 @@ class ListMarkElement {
 
             markElements.add(m);
             start += count;
+        }
+    }
+
+    public void replaceMarkEffect(int heroId, String regex, String replace){
+        for (int i = 0; i < markElements.size(); i++){
+            if (markElements.get(i).getHeroId()==heroId){
+                markElements.get(i).replaceMarkEffect(regex, replace);
+            }
         }
     }
 
@@ -415,10 +446,9 @@ class MarkElement {
         }
     }
 
-    public void replaceMarkEffect(String target, String replace) {
+    public void replaceMarkEffect(String regex, String replace) {
         for (int i = 0; i < markEffects.size(); i++) {
-            System.out.println("set at index " + i + ": '" + markEffects.get(i).replaceAll(target, replace) + "'");
-            setMarkEffect(i, markEffects.get(i).replaceAll(target, replace));
+            setMarkEffect(i, markEffects.get(i).replaceAll(regex, replace));
         }
     }
 
@@ -436,8 +466,6 @@ class MarkElement {
             bytes[markEffectStarts.get(index) + i] = barr[i];
         }
         for (int i = index + 1; i < markEffectStarts.size(); i++) {
-            System.out.println("increase index " + i + " from " + markEffectStarts.get(i) + " to "
-                    + (markEffectStarts.get(i) + deltalength));
             markEffectStarts.set(i, markEffectStarts.get(i) + deltalength);
         }
         barr = DHAExtension.toBytes(bytes.length - 4);
@@ -467,7 +495,7 @@ class ListBulletElement {
     public List<BulletElement> bulletElements;
 
     public ListBulletElement(byte[] bytes) {
-        this.bytes = bytes;
+        this.bytes = bytes.clone();
         bulletElements = new ArrayList<>();
         int start;
         if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
@@ -482,6 +510,14 @@ class ListBulletElement {
             BulletElement b = new BulletElement(Arrays.copyOfRange(bytes, start, start + count));
             bulletElements.add(b);
             start += count;
+        }
+    }
+
+    public void replaceBulletEffect(int heroId, String regex, String replace){
+        for (int i = 0; i < bulletElements.size(); i++){
+            if (bulletElements.get(i).getHeroId()==heroId){
+                bulletElements.get(i).setEffectName((value)->value.replaceAll(regex, replace));
+            }
         }
     }
 
@@ -519,7 +555,10 @@ class BulletElement {
         effectName = new String(Arrays.copyOfRange(bytes, start + 4, start + count - 1));
     }
 
-    public void setEffectName(String effect) {
+    public void setEffectName(StringOperator operator) {
+        String effect = new String(Arrays.copyOfRange(bytes, effectStart + 4,
+                effectStart + DHAExtension.bytesToInt(bytes, effectStart) + 3));
+        effect = operator.handle(effect);
         bytes = DHAExtension.replaceBytes(bytes, effectStart + 4,
                 effectStart + DHAExtension.bytesToInt(bytes, effectStart) + 3, effect.getBytes());
         int[] indexChanges = new int[] { 0, effectStart };
@@ -563,7 +602,7 @@ class ListCharComponent {
     public List<CharComponent> charComponents;
 
     public ListCharComponent(byte[] bytes) {
-        this.bytes = bytes;
+        this.bytes = bytes.clone();
         charComponents = new ArrayList<>();
         int start;
         if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
@@ -639,7 +678,7 @@ class ListSoundElement {
     public List<SoundElement> soundElements;
 
     public ListSoundElement(byte[] bytes) {
-        this.bytes = bytes;
+        this.bytes = bytes.clone();
         soundElements = new ArrayList<>();
         int start;
         if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
@@ -738,10 +777,12 @@ class SoundElement {
 class ListLabelElement {
     private byte[] bytes;
     public List<LabelElement> labelElements;
+    public Map<Integer,Integer> labelIndexMap;
 
     public ListLabelElement(byte[] bytes) {
-        this.bytes = bytes;
+        this.bytes = bytes.clone();
         labelElements = new ArrayList<>();
+        labelIndexMap = new HashMap<>();
         int start;
         if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
             start = DHAExtension.bytesToInt(bytes, 132);
@@ -752,9 +793,26 @@ class ListLabelElement {
         int count;
         while (start < bytes.length) {
             count = DHAExtension.bytesToInt(bytes, start) + 4;
-            labelElements.add(new LabelElement(Arrays.copyOfRange(bytes, start, start + count)));
+            LabelElement l = new LabelElement(Arrays.copyOfRange(bytes, start, start + count));
+            labelIndexMap.put(l.labelId, labelElements.size());
+            labelElements.add(l);
             start += count;
         }
+    }
+
+    public int copyLabel(int sourceId, int targetId) throws Exception {
+        if (!labelIndexMap.containsKey(sourceId)) {
+            return 1;
+        }else if (!labelIndexMap.containsKey(targetId)){
+            return 2;
+        }
+
+        byte[] bytes = labelElements.get(labelIndexMap.get(targetId)).getBytes();
+        labelElements.set(labelIndexMap.get(sourceId), new LabelElement(bytes));
+        labelElements.get(labelIndexMap.get(sourceId)).setLabelIndex(sourceId % 100);
+        labelElements.get(labelIndexMap.get(sourceId)).setHeroId(sourceId / 100);
+        labelElements.get(labelIndexMap.get(sourceId)).setLabelId(sourceId);
+        return 0;
     }
 
     public byte[] getBytes() {
@@ -778,7 +836,7 @@ class LabelElement {
     public int heroId;
 
     public LabelElement(byte[] bytes) {
-        this.bytes = bytes;
+        this.bytes = bytes.clone();
 
         labelId = DHAExtension.bytesToInt(bytes, 4);
         labelIndex = DHAExtension.bytesToInt(bytes, 36);
@@ -820,7 +878,7 @@ class ListIconElement {
     public Map<Integer, Integer> iconIndexDict;
 
     public ListIconElement(byte[] bytes) {
-        this.bytes = bytes;
+        this.bytes = bytes.clone();
         iconElements = new ArrayList<IconElement>();
         iconIndexDict = new HashMap<Integer, Integer>();
         int start;
@@ -857,7 +915,6 @@ class ListIconElement {
         } else {
             iconElements.get(iconIndexDict.get(sourceId)).setIconId(sourceId);
         }
-        DHAExtension.WriteAllBytes("D:/test.bytes", iconElements.get(iconIndexDict.get(sourceId)).getBytes());
     }
 
     public byte[] getBytes() {
@@ -1279,6 +1336,25 @@ class Element {
             }
         }
         return bytes;
+    }
+
+    public Element replaceValue(String type, StringOperator operator) {
+        return replaceValue(this, type, operator);
+    }
+
+    private Element replaceValue(Element element, String type, StringOperator operator) {
+        if (element.jtType == JT.Pri) {
+            if (element.typeS.equals(type)) {
+                element.setValue(operator.handle(element.valueS).getBytes());
+            }
+            return element;
+        }
+
+        for (int i = 0; i < element.childList.size(); i++) {
+            element.childList.set(i, replaceValue(element.childList.get(i), type, operator));
+        }
+
+        return element;
     }
 
     public Element replaceValue(String type, String target, String replace) {

@@ -9,7 +9,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 public class ModNew {
-    static ModSettings modSettings = new ModSettings(true, true, true, true, true, true);
+    static ModSettings modSettings = new ModSettings(true, true, true, true, true, true, true);
     static AOVModHelper modHelper = new AOVModHelper();
 
     public static void main(String[] args) throws Exception {

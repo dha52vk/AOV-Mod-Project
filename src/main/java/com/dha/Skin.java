@@ -23,6 +23,13 @@ public class Skin {
         id = skinId;
     }
 
+    public int getSkinLevel(){
+        switch(id){
+            default:
+                return label.skinLevel;
+        }
+    }
+
     @Override
     public String toString(){
         return name + "(" + id + ")";

@@ -27,8 +27,12 @@ public class AOVCustomMod {
         // PC/Documents/AOV/CustomPack/custompack_150/files/Resources/1.50.1/Ages/Prefab_Characters/Prefab_Hero/150_HanXin/skill");
         // taopack();
         
-        StringOperator operator = (s)->s.replace("con", "new");
-        System.out.println(get(operator));
+        ProjectXML xml = new ProjectXML(DHAExtension.ReadAllText("D:/test.xml"));
+        xml.insertActionChild(1, xml.getCheckHeroTickNode(1, 111));
+        xml.insertActionChild(2, xml.getCheckHeroTickNode(2, 141));
+        xml.insertActionChild(3, xml.getCheckHeroTickNode(3, 150));
+        xml.insertActionChild(4, xml.getCheckHeroTickNode(4, 501));
+        DHAExtension.WriteAllText("D:/test2.xml", xml.getXmlString());
         
         // ListDeviceSupport listDevices = new ListDeviceSupport();
         // listDevices.addNewDevice("Xiaomi 2201117TG");
