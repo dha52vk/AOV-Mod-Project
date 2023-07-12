@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.Condition;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -262,7 +263,7 @@ public class AOVModHelper {
                     }
                 }
             }
-            DHAExtension.WriteAllBytes("D:/test.bytes", element.getBytes());
+            // DHAExtension.WriteAllBytes("D:/test.bytes", element.getBytes());
             DHAExtension.WriteAllBytes(inputPath, AOVAnalyzer.AOVCompress(element.getBytes()));
             if (trapElement != null) {
                 DHAExtension.WriteAllBytes(trapInputPath, AOVAnalyzer.AOVCompress(trapElement.getBytes()));
@@ -412,6 +413,7 @@ public class AOVModHelper {
                     });
                 }
                 List<Integer> listIndex = xml.getTrackIndexByType("CheckSkinIdTick");
+                List<Integer> listIndexNot = new ArrayList<>();
                 NodeList trackList = xml.getNodeListByTagName("Track");
                 for (int j = 0; j < listIndex.size(); j++) {
                     NodeList eventChild = trackList.item(listIndex.get(j)).getChildNodes().item(1).getChildNodes();
@@ -421,6 +423,17 @@ public class AOVModHelper {
                             if (!attr.getNamedItem("value").getNodeValue().equals(idMod + "")) {
                                 listIndex.remove(j);
                                 j--;
+                            } else {
+                                if (eventChild.item(i + 2) != null) {
+                                    NamedNodeMap attr2 = eventChild.item(i + 2).getAttributes();
+                                    if (attr2.getNamedItem("name").getNodeValue().equals("bEqual")) {
+                                        if (attr2.getNamedItem("value").getNodeValue().equals("false")) {
+                                            listIndexNot.add(listIndex.get(j));
+                                            listIndex.remove(j);
+                                            j--;
+                                        }
+                                    }
+                                }
                             }
                             break;
                         }
@@ -428,16 +441,20 @@ public class AOVModHelper {
                 }
                 NodeList particle = xml.getNodeListByTagName("Track");
                 for (int j = 0; j < particle.getLength(); j++) {
+                    if (!trackTypeRemoveCheckSkinId.contains(particle.item(j).getAttributes()
+                            .getNamedItem("eventType").getNodeValue())) {
+                        continue;
+                    }
                     NodeList children = particle.item(j).getChildNodes();
                     for (int i = 0; i < children.getLength(); i++) {
                         if (children.item(i).getNodeName().equals("Condition")) {
                             if (listIndex.contains(Integer
                                     .parseInt(children.item(i).getAttributes().getNamedItem("id").getNodeValue()))) {
-                                Node parentEventType = children.item(i).getParentNode().getAttributes()
-                                        .getNamedItem("eventType");
-                                if (trackTypeRemoveCheckSkinId.contains(parentEventType.getNodeValue())) {
-                                    particle.item(j).removeChild(children.item(i));
-                                }
+                                particle.item(j).removeChild(children.item(i));
+                            } else if (listIndexNot.contains(Integer
+                                    .parseInt(children.item(i).getAttributes().getNamedItem("id").getNodeValue()))) {
+                                particle.item(j).getAttributes().getNamedItem("enabled").setNodeValue("false");
+                                break;
                             }
                         }
                     }
@@ -468,7 +485,7 @@ public class AOVModHelper {
                 }
 
                 xml.addComment("Mod By " + ChannelName + "! Subscribe: " + YoutubeLink + "  ");
-                xml = specialModAction(xml, idMod);
+                xml = specialModAction(xml, inputPath, idMod);
 
                 DHAExtension.WriteAllBytes(inputPath, AOVAnalyzer.AOVCompress(xml.getXmlString().getBytes()));
             }
@@ -1147,6 +1164,7 @@ public class AOVModHelper {
                     }
                     hasteXml.appendActionChild(track);
                 }
+                hasteXml = specialModHaste(hasteXml, new File(inputPath).getName(), idMod);
             }
             for (int i = 0; i < baseTrack.size(); i++) {
                 Node track = baseTrack.get(i);
@@ -1168,7 +1186,6 @@ public class AOVModHelper {
             }
 
             hasteXml.addComment("Mod By " + ChannelName + "! Subscribe: " + YoutubeLink + " ");
-            DHAExtension.WriteAllBytes("D:/test" + f +".xml", hasteXml.getXmlString().getBytes());
             DHAExtension.WriteAllBytes(outputPath,
                     AOVAnalyzer.AOVCompress(hasteXml.getXmlString().getBytes()));
         }
@@ -1183,16 +1200,100 @@ public class AOVModHelper {
 
     }
 
-    public ProjectXML specialModAction(ProjectXML xml, int idMod){
-        switch(idMod){
-            
+    public ProjectXML specialModAction(ProjectXML xml, String filePath, int idMod) throws Exception {
+        String parentPath = new File(filePath).getParent();
+        String fileName = new File(filePath).getName();
+        Node newTrack = null;
+        switch (idMod) {
+            case 13011:
+                switch (fileName) {
+                    case "S2B1.xml":
+                    case "S21.xml":
+                    case "S22.xml":
+                        String targetPath = parentPath + "/";
+                        if (fileName.equals("S2B1.xml")) {
+                            targetPath += "S2B1_13011.xml";
+                        } else if (fileName.equals("S21.xml")) {
+                            targetPath += "S2B2_13011.xml";
+                        } else if (fileName.equals("S22.xml")) {
+                            targetPath += "S2B3_13011.xml";
+                        }
+                        byte[] bytes = DHAExtension.ReadAllBytes(targetPath);
+                        byte[] decompress = AOVAnalyzer.AOVDecompress(bytes);
+                        if (decompress != null) {
+                            bytes = decompress;
+                        }
+                        ProjectXML xml2 = new ProjectXML(new String(bytes));
+
+                        xml2.setValue("String", new String[] { "resourceName", "resourceName2", "prefabName" },
+                                (StringOperator) (value) -> {
+                                    if (!value.toLowerCase().contains("prefab_skill_effect"))
+                                        return value;
+                                    String[] split = value.split("/");
+                                    if (tryParse(split[split.length - 1].split("_")[0])) {
+                                        if (split[split.length - 1].split("_")[0].length() == 5) {
+                                            return value;
+                                        }
+                                    }
+                                    String newValue = String.join("/", Arrays.copyOfRange(split, 0, 3)) + "/" + idMod
+                                            + "/"
+                                            + split[split.length - 1];
+                                    return newValue;
+                                });
+                        newTrack = xml2.getTrackNodeByName("TriggerParticle0").get(0);
+                        List<Node> baseTrackList = xml.getTrackNodeByName("TriggerParticle0", false);
+                        for (int i = 0; i < baseTrackList.size(); i++) {
+                            Node baseTrack = baseTrackList.get(i);
+                            while (baseTrack.getChildNodes().getLength() != 0) {
+                                baseTrack.removeChild(baseTrack.getChildNodes().item(0));
+                            }
+                        }
+                        // DHAExtension.WriteAllText("D:/test2.xml", ProjectXML.nodeToString(newTrack));
+                        break;
+                    case "S2B1_13011.xml":
+                    case "S2B2_13011.xml":
+                    case "S2B3_13011.xml":
+                    NodeList trackList = xml.getNodeListByTagName("Track");
+                    Node trackDisable=trackList.item(0);
+                    String conditionGUID =
+                    trackList.item(1).getAttributes().getNamedItem("guid").getNodeValue();
+                    if (trackDisable != null){
+                    trackDisable.getParentNode().removeChild(trackDisable);
+                    }
+                    Node condition = ProjectXML.getConditionNode(0, conditionGUID);
+                    condition = trackDisable.getOwnerDocument().importNode(condition, true);
+                    trackDisable.insertBefore(condition, trackDisable.getChildNodes().item(1));
+                    xml.appendActionChild(trackDisable);
+                    DHAExtension.WriteAllText("D:/test.xml", xml.getXmlString());
+                    break;
+                }
+                break;
+        }
+        if (newTrack != null) {
+            for (int i = 0; i < newTrack.getChildNodes().getLength(); i++) {
+                if (newTrack.getChildNodes().item(i).getNodeName().equals("Condition")) {
+                    newTrack.removeChild(newTrack.getChildNodes().item(i));
+                    i--;
+                }else if (newTrack.getChildNodes().item(i).getNodeName().equals("Event")){
+                    NodeList children = newTrack.getChildNodes().item(i).getChildNodes();
+                    for (int j = 0; j < children.getLength(); j++){
+                        if (children.item(j).getNodeName().equals("TemplateObject")){
+                            children.item(j).getAttributes().getNamedItem("id").setNodeValue("0");
+                            children.item(j).getAttributes().getNamedItem("objectName").setNodeValue("self");
+                        }
+                    }
+                }
+            }
+            xml.appendActionChild(newTrack);
+            // update(fileName);
+            // DHAExtension.WriteAllText("D:/test.xml", xml.getXmlString());
         }
         return xml;
     }
 
-    public ProjectXML specialModHaste(ProjectXML xml, int idMod){
-        switch(idMod){
-            
+    public ProjectXML specialModHaste(ProjectXML xml, String fileName, int idMod) {
+        switch (idMod) {
+
         }
         return xml;
     }
