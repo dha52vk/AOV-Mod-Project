@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.sql.Date;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,12 +30,11 @@ public class AOVCustomMod {
         // PC/Documents/AOV/CustomPack/custompack_150/files/Resources/1.50.1/Ages/Prefab_Characters/Prefab_Hero/150_HanXin/skill");
         // taopack();
         
-        ProjectXML xml = new ProjectXML(DHAExtension.ReadAllText("D:/test.xml"));
-        xml.insertActionChild(1, xml.getCheckHeroTickNode(1, 111));
-        xml.insertActionChild(2, xml.getCheckHeroTickNode(2, 141));
-        xml.insertActionChild(3, xml.getCheckHeroTickNode(3, 150));
-        xml.insertActionChild(4, xml.getCheckHeroTickNode(4, 501));
-        DHAExtension.WriteAllText("D:/test2.xml", xml.getXmlString());
+        long milliSec = 188680l;
+        DateFormat simple = new SimpleDateFormat(
+            "mm:ss.SSS");
+        Date result = new Date(milliSec);
+        System.out.println(simple.format(result));
         
         // ListDeviceSupport listDevices = new ListDeviceSupport();
         // listDevices.addNewDevice("Xiaomi 2201117TG");

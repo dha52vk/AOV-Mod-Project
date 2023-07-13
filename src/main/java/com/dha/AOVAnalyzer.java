@@ -899,6 +899,10 @@ class ListIconElement {
     }
 
     public void copyIcon(int sourceId, int targetId) throws Exception {
+        copyIcon(sourceId, targetId, true);
+    }
+
+    public void copyIcon(int sourceId, int targetId, boolean swap) throws Exception {
         if (!iconIndexDict.containsKey(sourceId) || !iconIndexDict.containsKey(targetId)) {
             throw new Exception("not found id " + sourceId + " or " + targetId);
         }
@@ -907,7 +911,7 @@ class ListIconElement {
         iconElements.set(iconIndexDict.get(sourceId), new IconElement(bytes));
         iconElements.get(iconIndexDict.get(sourceId)).setIconIndex(sourceId % 100);
         iconElements.get(iconIndexDict.get(sourceId)).setHeroId(sourceId / 100);
-        if (sourceId % 100 == 0) {
+        if (sourceId % 100 == 0 && swap) {
             iconElements.get(iconIndexDict.get(targetId)).setHeroId(sourceId / 100);
             iconElements.get(iconIndexDict.get(targetId)).setIconId(sourceId);
             iconElements.get(iconIndexDict.get(targetId)).setIconIndex(targetId % 100);

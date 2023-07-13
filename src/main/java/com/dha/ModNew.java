@@ -1,6 +1,9 @@
 package com.dha;
 
 import java.io.File;
+import java.sql.Date;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -19,7 +22,8 @@ public class ModNew {
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Vui long cho...");
-        List<Hero> heroList = gson.fromJson(DHAExtension.ReadAllText("D:/skinlist(label).json"), HeroList.class).heros;
+        List<Hero> heroList = gson.fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
+                HeroList.class).heros;
 
         for (Hero hero : heroList) {
             for (Skin skin : hero.skins) {
@@ -47,8 +51,11 @@ public class ModNew {
             if (luachon.equals("1")) {
                 String id = "", originid = "";
                 System.out.print("Nhap id skin muon mod: ");
-                while (!skinidList.contains(id = scanner.nextLine())) {
+                while (!skinidList.contains(id = scanner.nextLine()) && !id.equals("0")) {
                     System.out.print("Nhap lai id skin muon mod: ");
+                }
+                if (id.equals("0")) {
+                    continue;
                 }
                 modPackName = "pack_" + id;
                 modHelper.setModPackName(modPackName);
@@ -77,7 +84,7 @@ public class ModNew {
             } else if (luachon.equals("2")) {
                 System.out.print("Nhap ten pack: ");
                 modPackName = scanner.nextLine().trim();
-                if (new File("F:/This PC/Documents/AOV/" + modPackName).exists()) {
+                if (new File(AOVModHelper.saveModPath + modPackName).exists()) {
                     System.out.print("Da co pack " + modPackName + " ban co muon loai bo pack cu ? (C/k): ");
                     luachon = scanner.nextLine().toLowerCase();
                     while (!luachon.equals("c") && !luachon.equals("k")) {
@@ -86,7 +93,6 @@ public class ModNew {
                     }
                     if (luachon.equals("k"))
                         continue;
-                    DHAExtension.deleteDir("F:/This PC/Documents/AOV/" + modPackName);
                 }
                 modHelper.setModPackName(modPackName);
                 System.out.print("Nhap cac id skin: ");
@@ -140,7 +146,12 @@ public class ModNew {
                 long start = System.currentTimeMillis();
                 modHelper.modSkin(modList);
                 long end = System.currentTimeMillis();
-                System.out.println("Mod xong sau " + (end - start) / 1000f + " giay");
+
+                long milliSec = end-start;
+                DateFormat simple = new SimpleDateFormat(
+                        "mm:ss.SSS");
+                Date result = new Date(milliSec);
+                System.out.println("Mod xong sau " + simple.format(result));
             }
         }
 

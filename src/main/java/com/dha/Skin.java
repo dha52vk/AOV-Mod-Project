@@ -25,6 +25,12 @@ public class Skin {
 
     public int getSkinLevel(){
         switch(id){
+            case "5434":
+                return 2;
+            case "5213":
+                return 3;
+            case "1805":
+                return 2;
             default:
                 return label.skinLevel;
         }

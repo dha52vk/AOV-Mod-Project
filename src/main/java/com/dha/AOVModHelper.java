@@ -21,7 +21,10 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.google.gson.Gson;
+
 public class AOVModHelper {
+    public static String heroListJsonPath = "D:/skinlist(label).json";
     public static String ChannelName = "AHMODAOV";
     public static String YoutubeLink = "https://www.youtube.com/@AHMODAOV";
 
@@ -31,20 +34,30 @@ public class AOVModHelper {
     public String AssetRefsPath = "F:/This PC/Documents/AOV/Resources/1.50.1/AssetRefs/";
     public String LanguagePath = "F:/This PC/Documents/AOV/Resources/1.50.1/Languages/VN_Garena_VN/";
     public String SpecialPath = ".special/";
-    public String saveModPath = "F:/This PC/Documents/AOV/";
-    public String cacheModPath = "F:/This PC/Documents/AOV/cachemod/";
-    public String cacheModPath2 = "F:/This PC/Documents/AOV/cachemod2/";
+    public static String saveModPath = "F:/This PC/Documents/AOV/";
+    public static String cacheModPath = "F:/This PC/Documents/AOV/cachemod/";
+    public static String cacheModPath2 = "F:/This PC/Documents/AOV/cachemod2/";
 
     // String[] nameElementModToDefault = new String[] {
     // "ArtSkinPrefabLOD", "ArtSkinPrefabLODEx", "ArtSkinLobbyShowLOD",
     // "ArtSkinLobbyIdleShowLOD", "ArtSkinLobbyShowCamera", "useNewMecanim",
     // "LobbyScale", "ArtSkinLobbyNode"
     // };
+    List<String> skinNotSupportMod = Arrays.asList(new String[] { "13012" });
     List<String> skinHasOrgan = Arrays.asList(new String[] { "1118", "14112", "15010", "5019" });
     List<String> originSkinOrgan = Arrays.asList(new String[] { "1113", "1412", "1501", "5012" });
     List<String> trackTypeRemoveCheckSkinId = Arrays
             .asList(new String[] { "PlayAnimDuration", "TriggerParticle", "TriggerParticleTick",
-                    "BattleUIAnimationDuration", "HitTriggerTick" });
+                    "BattleUIAnimationDuration" });// , "HitTriggerTick" });
+
+    public static List<String> idNotSwap = new ArrayList<>(Arrays.asList(new String[] {
+            "19014", "11213", "13211", "50118", "16711", "19610", "13610", "11813", "5157", "5255",
+            "1135", "1913", "5069", "5483", "1696", "1209", "5464", "16712"
+    }));
+    
+    Map<Integer, Integer> skinSoundSpecial = new HashMap<Integer, Integer>(){{
+        put(54303, 54302);
+    }};
 
     String modPackName;
     boolean echo;
@@ -142,7 +155,7 @@ public class AOVModHelper {
             String trapInputPath = cacheModPath + "Prefab_Hero/" + heroCodeName + "/" + heroCodeName
                     + "_trap_actorinfo.bytes";
             if (new File(trapInputPath).exists()) {
-                System.out.println("has trap");
+                // System.out.println("has trap");
                 inputBytes = DHAExtension.ReadAllBytes(trapInputPath);
                 trapElement = new Element(AOVAnalyzer.AOVDecompress(inputBytes));
             }
@@ -168,6 +181,8 @@ public class AOVModHelper {
                     for (int s = 0; s < element.getChild("SkinPrefab").getChildLength(); s++) {
                         Element skin = element.getChild("SkinPrefab").getChild(s);
                         String code = skin.getChild(0).getChild(0).valueS;
+                        if (code == null)
+                            continue;
                         String[] split = code.split("/");
                         String id = split[split.length - 1].split("_")[0];
                         if (id.equals(newId)) {
@@ -189,6 +204,8 @@ public class AOVModHelper {
                             }
                             Element skin2 = element.getChild("SkinPrefab").getChild(s);
                             String code = skin2.getChild(0).getChild(0).valueS;
+                            if (code == null)
+                                continue;
                             String[] split = code.split("/");
                             String id = split[split.length - 1].split("_")[0];
                             boolean kt = false;
@@ -222,6 +239,8 @@ public class AOVModHelper {
                     for (int i = 0; i < element.getChild("SkinPrefab").getChildLength(); i++) {
                         Element skin = element.getChild("SkinPrefab").getChild(i);
                         String code = skin.getChild(2).getChild(0).valueS;
+                        if (code == null)
+                            continue;
                         String[] split = code.split("/");
                         String id = split[split.length - 1].split("_")[0];
                         if (id.equals(newId)) {
@@ -336,6 +355,9 @@ public class AOVModHelper {
             if (!modInfo.modSettings.modAction || modInfo.newSkin.getSkinLevel() < 2) {
                 continue;
             }
+            if (skinNotSupportMod.contains(modInfo.newSkin.id)) {
+                update("   + Skin not support mod: " + modInfo.newSkin);
+            }
             update("    + Modding actions " + (l + 1) + "/" + modList.size() + ": " + modInfo.newSkin);
 
             String id = modInfo.newSkin.id;
@@ -380,7 +402,7 @@ public class AOVModHelper {
 
                 xml.setValue("String", new String[] { "resourceName", "resourceName2", "prefabName" },
                         (StringOperator) (value) -> {
-                            if (!value.toLowerCase().contains("prefab_skill_effect"))
+                            if (!value.toLowerCase().contains("prefab_skill_effects/hero_skill_effects/"))
                                 return value;
                             String[] split = value.split("/");
                             if (tryParse(split[split.length - 1].split("_")[0])) {
@@ -450,9 +472,16 @@ public class AOVModHelper {
                         if (children.item(i).getNodeName().equals("Condition")) {
                             if (listIndex.contains(Integer
                                     .parseInt(children.item(i).getAttributes().getNamedItem("id").getNodeValue()))) {
+                                // update("removed condition "
+                                // + particle.item(j).getAttributes().getNamedItem("trackName").getNodeValue());
                                 particle.item(j).removeChild(children.item(i));
                             } else if (listIndexNot.contains(Integer
                                     .parseInt(children.item(i).getAttributes().getNamedItem("id").getNodeValue()))) {
+                                update("disabled "
+                                        + particle.item(j).getAttributes().getNamedItem("trackName").getNodeValue()
+                                        + " (type: "
+                                        + particle.item(j).getAttributes().getNamedItem("eventType").getNodeValue()
+                                        + ")");
                                 particle.item(j).getAttributes().getNamedItem("enabled").setNodeValue("false");
                                 break;
                             }
@@ -679,6 +708,10 @@ public class AOVModHelper {
             update("    + Modding sound " + (l + 1) + "/" + modList.size() + ": " + modInfo.newSkin);
             int heroId = Integer.parseInt(modInfo.newSkin.id.substring(0, 3));
             int targetId = heroId * 100 + Integer.parseInt(modInfo.newSkin.id.substring(3)) - 1;
+            if (skinSoundSpecial.containsKey(targetId)){
+                targetId = skinSoundSpecial.get(targetId);
+                update(targetId+"");
+            }
             int baseId = heroId * 100 + Integer.parseInt(modInfo.targetSkins.get(0).id.substring(3)) - 1;
             for (int i = 0; i < soundListArr.length; i++) {
                 ListSoundElement targetSounds = null;
@@ -702,7 +735,7 @@ public class AOVModHelper {
         update(" Dang mod icon, ten va man xuat hien pack " + modPackName);
 
         String inputPath = DatabinPath + "Actor/heroSkin.bytes";
-        String outputPath = "F:/This PC/Documents/AOV/" + modPackName
+        String outputPath = saveModPath + modPackName
                 + "/files/Resources/1.50.1/Databin/Client/Actor/heroSkin.bytes";
         if (new File(outputPath).exists())
             inputPath = outputPath;
@@ -713,12 +746,12 @@ public class AOVModHelper {
             ModInfo modInfo = modList.get(l);
             if (!modInfo.modSettings.modIcon)
                 continue;
-            update("   + Modding icons " + (l + 1) + "/" + modList.size() + ": " + modInfo);
+            update("    + Modding icons " + (l + 1) + "/" + modList.size() + ": " + modInfo);
             int heroId = Integer.parseInt(modInfo.newSkin.id.substring(0, 3));
             int targetId = heroId * 100 + Integer.parseInt(modInfo.newSkin.id.substring(3)) - 1;
             for (Skin skin : modInfo.targetSkins) {
                 int baseId = heroId * 100 + Integer.parseInt(skin.id.substring(3)) - 1;
-                listIconElement.copyIcon(baseId, targetId);
+                listIconElement.copyIcon(baseId, targetId, !idNotSwap.contains(modInfo.newSkin.id));
             }
         }
         DHAExtension.WriteAllBytes(outputPath, AOVAnalyzer.AOVCompress(listIconElement.getBytes()));
@@ -727,8 +760,9 @@ public class AOVModHelper {
     public void modLabel(List<ModInfo> modList) throws Exception {
         update(" Dang mod bac skin pack " + modPackName);
 
+        List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText(heroListJsonPath), HeroList.class).heros;
         String inputPath = DatabinPath + "Shop/HeroSkinShop.bytes";
-        String outputPath = "F:/This PC/Documents/AOV/" + modPackName
+        String outputPath = saveModPath + modPackName
                 + "/files/Resources/1.50.1/Databin/Client/Shop/HeroSkinShop.bytes";
         if (new File(outputPath).exists())
             inputPath = outputPath;
@@ -739,12 +773,34 @@ public class AOVModHelper {
             ModInfo modInfo = modList.get(l);
             if (!modInfo.modSettings.modIcon)
                 continue;
-            update("   + Modding label " + (l + 1) + "/" + modList.size() + ": " + modInfo);
+            update("    + Modding label " + (l + 1) + "/" + modList.size() + ": " + modInfo);
             int heroId = Integer.parseInt(modInfo.newSkin.id.substring(0, 3));
             int targetId = heroId * 100 + Integer.parseInt(modInfo.newSkin.id.substring(3)) - 1;
             for (Skin skin : modInfo.targetSkins) {
                 int baseId = heroId * 100 + Integer.parseInt(skin.id.substring(3)) - 1;
-                listLabelElement.copyLabel(baseId, targetId);
+                int result = listLabelElement.copyLabel(baseId, targetId);
+                boolean notfound = false;
+                while (result == 2) {
+                    notfound = true;
+                    for (Hero hero : heroList) {
+                        for (Skin skin2 : hero.skins) {
+                            if (skin2.label == modInfo.newSkin.label) {
+                                targetId = Integer.parseInt(skin2.id.substring(0, 3)) * 100
+                                        + Integer.parseInt(skin2.id.substring(3)) - 1;
+                                result = listLabelElement.copyLabel(baseId, targetId);
+                                if (result != 2) {
+                                    break;
+                                }
+                            }
+                        }
+                        if (result != 2) {
+                            break;
+                        }
+                    }
+                }
+                if (notfound) {
+                    update("changed new label to " + targetId + "(" + modInfo.newSkin.label + ")");
+                }
             }
         }
         DHAExtension.WriteAllBytes(outputPath, AOVAnalyzer.AOVCompress(listLabelElement.getBytes()));
@@ -1012,7 +1068,7 @@ public class AOVModHelper {
                 if (!modInfo.modSettings.modHaste || modInfo.newSkin.getSkinLevel() < 5) {
                     continue;
                 }
-                update("   + Modding " + new File(inputPath).getName() + " " + (l + 1) + "/" + modList.size() + ": " +
+                update("    + Modding " + new File(inputPath).getName() + " " + (l + 1) + "/" + modList.size() + ": " +
                         modInfo.newSkin);
 
                 int hero = Integer.parseInt(modInfo.newSkin.id.substring(0, 3));
@@ -1227,7 +1283,7 @@ public class AOVModHelper {
 
                         xml2.setValue("String", new String[] { "resourceName", "resourceName2", "prefabName" },
                                 (StringOperator) (value) -> {
-                                    if (!value.toLowerCase().contains("prefab_skill_effect"))
+                                    if (!value.toLowerCase().contains("prefab_skill_effects/hero_skill_effects/"))
                                         return value;
                                     String[] split = value.split("/");
                                     if (tryParse(split[split.length - 1].split("_")[0])) {
@@ -1250,22 +1306,22 @@ public class AOVModHelper {
                         }
                         // DHAExtension.WriteAllText("D:/test2.xml", ProjectXML.nodeToString(newTrack));
                         break;
-                    case "S2B1_13011.xml":
-                    case "S2B2_13011.xml":
-                    case "S2B3_13011.xml":
-                    NodeList trackList = xml.getNodeListByTagName("Track");
-                    Node trackDisable=trackList.item(0);
-                    String conditionGUID =
-                    trackList.item(1).getAttributes().getNamedItem("guid").getNodeValue();
-                    if (trackDisable != null){
-                    trackDisable.getParentNode().removeChild(trackDisable);
-                    }
-                    Node condition = ProjectXML.getConditionNode(0, conditionGUID);
-                    condition = trackDisable.getOwnerDocument().importNode(condition, true);
-                    trackDisable.insertBefore(condition, trackDisable.getChildNodes().item(1));
-                    xml.appendActionChild(trackDisable);
-                    DHAExtension.WriteAllText("D:/test.xml", xml.getXmlString());
-                    break;
+                    // case "S2B1_13011.xml":
+                    // case "S2B2_13011.xml":
+                    // case "S2B3_13011.xml":
+                    // NodeList trackList = xml.getNodeListByTagName("Track");
+                    // Node trackDisable=trackList.item(0);
+                    // String conditionGUID =
+                    // trackList.item(1).getAttributes().getNamedItem("guid").getNodeValue();
+                    // if (trackDisable != null){
+                    // trackDisable.getParentNode().removeChild(trackDisable);
+                    // }
+                    // Node condition = ProjectXML.getConditionNode(0, conditionGUID);
+                    // condition = trackDisable.getOwnerDocument().importNode(condition, true);
+                    // trackDisable.insertBefore(condition, trackDisable.getChildNodes().item(1));
+                    // xml.appendActionChild(trackDisable);
+                    // DHAExtension.WriteAllText("D:/test.xml", xml.getXmlString());
+                    // break;
                 }
                 break;
         }
@@ -1274,10 +1330,10 @@ public class AOVModHelper {
                 if (newTrack.getChildNodes().item(i).getNodeName().equals("Condition")) {
                     newTrack.removeChild(newTrack.getChildNodes().item(i));
                     i--;
-                }else if (newTrack.getChildNodes().item(i).getNodeName().equals("Event")){
+                } else if (newTrack.getChildNodes().item(i).getNodeName().equals("Event")) {
                     NodeList children = newTrack.getChildNodes().item(i).getChildNodes();
-                    for (int j = 0; j < children.getLength(); j++){
-                        if (children.item(j).getNodeName().equals("TemplateObject")){
+                    for (int j = 0; j < children.getLength(); j++) {
+                        if (children.item(j).getNodeName().equals("TemplateObject")) {
                             children.item(j).getAttributes().getNamedItem("id").setNodeValue("0");
                             children.item(j).getAttributes().getNamedItem("objectName").setNodeValue("self");
                         }
