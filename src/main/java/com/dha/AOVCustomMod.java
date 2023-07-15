@@ -19,6 +19,8 @@ import java.util.zip.Inflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.w3c.dom.Document;
+
 import com.github.luben.zstd.Zstd;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -30,19 +32,21 @@ public class AOVCustomMod {
         // PC/Documents/AOV/CustomPack/custompack_150/files/Resources/1.50.1/Ages/Prefab_Characters/Prefab_Hero/150_HanXin/skill");
         // taopack();
         
-        long milliSec = 188680l;
-        DateFormat simple = new SimpleDateFormat(
-            "mm:ss.SSS");
-        Date result = new Date(milliSec);
-        System.out.println(simple.format(result));
-        
+        // saveHeroListTo("D:/herolisttested.txt");
+
         // ListDeviceSupport listDevices = new ListDeviceSupport();
         // listDevices.addNewDevice("Xiaomi 2201117TG");
         // DHAExtension.WriteAllBytes("D:/VeryHighFrameModeBlackList.bytes", listDevices.getBytes());
     }
+    
+    public static void saveHeroListTo(String path){
+        List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText("D:/skinlist(label).json"), HeroList.class).heros;
+        String content="";
+        for(Hero hero : heroList){
+            content+="\n"+hero.name;
+        }
+        DHAExtension.WriteAllText(path, content);
 
-    public static String get(StringOperator operator){
-        return operator.handle("content");
     }
 
     public static void findAllActionsResource(String path) {

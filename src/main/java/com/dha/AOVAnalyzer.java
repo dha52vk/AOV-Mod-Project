@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -89,10 +90,10 @@ class ProjectXML {
         Node actionNode = doc.getElementsByTagName("Action").item(0);
         child = doc.importNode(child, true);
         int trackCount = 0;
-        for (int i = 0; i < actionNode.getChildNodes().getLength(); i++){
-            if (actionNode.getChildNodes().item(i).getNodeName().equals("Track")){
+        for (int i = 0; i < actionNode.getChildNodes().getLength(); i++) {
+            if (actionNode.getChildNodes().item(i).getNodeName().equals("Track")) {
                 trackCount++;
-                if (trackCount == index+1){
+                if (trackCount == index + 1) {
                     index = i;
                     break;
                 }
@@ -107,7 +108,7 @@ class ProjectXML {
         actionNode.appendChild(child);
     }
 
-    public NodeList getNodeListByTagName(String tagName){
+    public NodeList getNodeListByTagName(String tagName) {
         return doc.getElementsByTagName(tagName);
     }
 
@@ -141,9 +142,9 @@ class ProjectXML {
             Node node = trackList.item(i);
             if (node.getAttributes().getNamedItem("eventType").getNodeValue().equals(trackType)) {
                 if (clone)
-                targetList.add(node.cloneNode(true));
+                    targetList.add(node.cloneNode(true));
                 else
-                targetList.add(node);
+                    targetList.add(node);
             }
         }
         return targetList;
@@ -220,7 +221,7 @@ class ProjectXML {
     }
 
     public void setValue(String tagname, String name, StringOperator operator) {
-        setValue(tagname, new String[]{name}, "", operator);
+        setValue(tagname, new String[] { name }, "", operator);
     }
 
     public void setValue(String tagname, String[] nameArr, StringOperator operator) {
@@ -228,7 +229,7 @@ class ProjectXML {
     }
 
     public void setValue(String tagname, String name, String parentName, StringOperator operator) {
-        setValue(tagname, new String[]{name}, parentName, operator);
+        setValue(tagname, new String[] { name }, parentName, operator);
     }
 
     public void setValue(String tagname, String[] nameArr, String parentName, StringOperator operator) {
@@ -239,7 +240,8 @@ class ProjectXML {
                     .getNamedItem(node.getParentNode().getNodeName().toLowerCase() + "Name");
             if (parentName.equals("") || (parentNameNode != null && parentNameNode.getNodeValue().equals(parentName))) {
                 Node nameNode = node.getAttributes().getNamedItem("name");
-                if (nameNode != null && (nameArr.length==0 || Arrays.asList(nameArr).contains(nameNode.getNodeValue()))) {
+                if (nameNode != null
+                        && (nameArr.length == 0 || Arrays.asList(nameArr).contains(nameNode.getNodeValue()))) {
                     node.getAttributes().getNamedItem("value")
                             .setNodeValue(operator.handle(node.getAttributes().getNamedItem("value").getNodeValue()));
                 }
@@ -281,25 +283,39 @@ class ProjectXML {
     }
 
     public static String nodeToString(Node node) {
-        StringWriter sw = new StringWriter();
+        TransformerFactory tf = TransformerFactory.newInstance();
+        Transformer transformer;
         try {
-            Transformer t = TransformerFactory.newInstance().newTransformer();
-            t.transform(new DOMSource(node), new StreamResult(sw));
-        } catch (TransformerException te) {
-            te.printStackTrace();
+            tf.setAttribute("indent-number", 2);
+            transformer = tf.newTransformer();
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            // transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+
+            Writer out = new StringWriter();
+            transformer.transform(new DOMSource(node), new StreamResult(out));
+            return out.toString().replaceAll("(?m)^[ \t]*\r?\n", "");
+        } catch (TransformerException e) {
+            e.printStackTrace();
         }
-        return sw.toString();
+
+        return null;
     }
 
     public static String convertDocumentToString(Document doc) {
         TransformerFactory tf = TransformerFactory.newInstance();
         Transformer transformer;
         try {
+            doc.setXmlStandalone(true);
+            tf.setAttribute("indent-number", 2);
             transformer = tf.newTransformer();
-            StringWriter writer = new StringWriter();
-            transformer.transform(new DOMSource(doc), new StreamResult(writer));
-            String output = writer.getBuffer().toString();
-            return output;
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            // transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+
+            Writer out = new StringWriter();
+            transformer.transform(new DOMSource(doc), new StreamResult(out));
+            return out.toString().replaceAll("(?m)^[ \t]*\r?\n", "");
         } catch (TransformerException e) {
             e.printStackTrace();
         }
@@ -336,7 +352,7 @@ class ListDeviceSupport {
     public ListDeviceSupport(byte[] bytes) {
         deviceList = new ArrayList<>();
         int start;
-        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S')
             start = DHAExtension.bytesToInt(bytes, 132);
         else
             start = 0;
@@ -363,6 +379,7 @@ class ListDeviceSupport {
                     DHAExtension.toBytes(deviceList.get(i).length() + 1),
                     deviceList.get(i).getBytes(), new byte[] { 0, 0 });
         }
+        bytes = DHAExtension.replaceBytes(bytes, 12, 16, DHAExtension.toBytes(deviceList.size()));
         return bytes;
     }
 }
@@ -370,12 +387,14 @@ class ListDeviceSupport {
 class ListMarkElement {
     private byte[] bytes;
     public List<MarkElement> markElements;
+    private List<Integer> listHeroId;
 
     public ListMarkElement(byte[] bytes) {
         this.bytes = bytes.clone();
         markElements = new ArrayList<>();
+        listHeroId = new ArrayList<>();
         int start;
-        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S')
             start = DHAExtension.bytesToInt(bytes, 132);
         else
             start = 0;
@@ -385,15 +404,20 @@ class ListMarkElement {
         while (start < bytes.length) {
             count = DHAExtension.bytesToInt(bytes, start) + 4;
             MarkElement m = new MarkElement(Arrays.copyOfRange(bytes, start, start + count));
-
+            if (m.markEffects.size()!=0)
+                listHeroId.add(m.getHeroId());
             markElements.add(m);
             start += count;
         }
     }
 
-    public void replaceMarkEffect(int heroId, String regex, String replace){
-        for (int i = 0; i < markElements.size(); i++){
-            if (markElements.get(i).getHeroId()==heroId){
+    public boolean containsHeroId(int heroId){
+        return listHeroId.contains(heroId);
+    }
+
+    public void replaceMarkEffect(int heroId, String regex, String replace) {
+        for (int i = 0; i < markElements.size(); i++) {
+            if (markElements.get(i).getHeroId() == heroId) {
                 markElements.get(i).replaceMarkEffect(regex, replace);
             }
         }
@@ -405,9 +429,10 @@ class ListMarkElement {
             childBytes = DHAExtension.mergeBytes(childBytes, m.getBytes());
         }
         int start;
-        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S') {
             start = DHAExtension.bytesToInt(bytes, 132);
-        else
+            bytes = DHAExtension.replaceBytes(bytes, 12, 16, DHAExtension.toBytes(markElements.size()));
+        } else
             start = 0;
         return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, start), childBytes);
     }
@@ -493,14 +518,16 @@ class MarkElement {
 class ListBulletElement {
     private byte[] bytes;
     public List<BulletElement> bulletElements;
+    private List<Integer> heroIdList;
 
     public ListBulletElement(byte[] bytes) {
         this.bytes = bytes.clone();
         bulletElements = new ArrayList<>();
+        heroIdList = new ArrayList<>();
         int start;
-        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S') {
             start = DHAExtension.bytesToInt(bytes, 132);
-        else
+        } else
             start = 0;
         if (start == bytes.length)
             return;
@@ -508,15 +535,20 @@ class ListBulletElement {
         while (start < bytes.length) {
             count = DHAExtension.bytesToInt(bytes, start) + 4;
             BulletElement b = new BulletElement(Arrays.copyOfRange(bytes, start, start + count));
+            heroIdList.add(b.getHeroId());
             bulletElements.add(b);
             start += count;
         }
     }
 
-    public void replaceBulletEffect(int heroId, String regex, String replace){
-        for (int i = 0; i < bulletElements.size(); i++){
-            if (bulletElements.get(i).getHeroId()==heroId){
-                bulletElements.get(i).setEffectName((value)->value.replaceAll(regex, replace));
+    public boolean containsHeroId(int heroId){
+        return heroIdList.contains(heroId);
+    }
+
+    public void replaceBulletEffect(int heroId, String regex, String replace) {
+        for (int i = 0; i < bulletElements.size(); i++) {
+            if (bulletElements.get(i).getHeroId() == heroId) {
+                bulletElements.get(i).setEffectName((value) -> value.replaceAll(regex, replace));
             }
         }
     }
@@ -527,9 +559,10 @@ class ListBulletElement {
             childBytes = DHAExtension.mergeBytes(childBytes, b.getBytes());
         }
         int start;
-        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S') {
             start = DHAExtension.bytesToInt(bytes, 132);
-        else
+            bytes = DHAExtension.replaceBytes(bytes, 12, 16, DHAExtension.toBytes(bulletElements.size()));
+        } else
             start = 0;
         return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, start), childBytes);
     }
@@ -605,7 +638,7 @@ class ListCharComponent {
         this.bytes = bytes.clone();
         charComponents = new ArrayList<>();
         int start;
-        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S')
             start = DHAExtension.bytesToInt(bytes, 132);
         else
             start = 0;
@@ -635,9 +668,10 @@ class ListCharComponent {
             childBytes = DHAExtension.mergeBytes(childBytes, e.getBytes());
         }
         int start;
-        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S') {
             start = DHAExtension.bytesToInt(bytes, 132);
-        else
+            bytes = DHAExtension.replaceBytes(bytes, 12, 16, DHAExtension.toBytes(charComponents.size()));
+        } else
             start = 0;
         return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, start), childBytes);
     }
@@ -681,7 +715,7 @@ class ListSoundElement {
         this.bytes = bytes.clone();
         soundElements = new ArrayList<>();
         int start;
-        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S')
             start = DHAExtension.bytesToInt(bytes, 132);
         else
             start = 0;
@@ -711,14 +745,14 @@ class ListSoundElement {
         soundElements.addAll(targetSounds);
     }
 
-    public void setSound(int baseId, List<SoundElement> targetSounds){
+    public void setSound(int baseId, List<SoundElement> targetSounds) {
         for (int i = 0; i < soundElements.size(); i++) {
             if (soundElements.get(i).skinId == baseId) {
                 soundElements.remove(i);
                 i--;
             }
         }
-        for (int i = 0; i < targetSounds.size(); i++){
+        for (int i = 0; i < targetSounds.size(); i++) {
             targetSounds.get(i).setSkinId(baseId);
         }
         soundElements.addAll(targetSounds);
@@ -730,9 +764,10 @@ class ListSoundElement {
             childBytes = DHAExtension.mergeBytes(childBytes, e.getBytes());
         }
         int start;
-        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S') {
             start = DHAExtension.bytesToInt(bytes, 132);
-        else
+            bytes = DHAExtension.replaceBytes(bytes, 12, 16, DHAExtension.toBytes(soundElements.size()));
+        } else
             start = 0;
         return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, start), childBytes);
     }
@@ -761,11 +796,16 @@ class SoundElement {
     }
 
     public void setSkinId(int skinId) {
+        setSkinId(skinId, true);
+    }
+
+    public void setSkinId(int skinId, boolean changeSoundId) {
         if (this.skinId == 0)
             return;
         bytes = DHAExtension.replaceBytes(bytes, DHAExtension.toBytes(this.skinId), DHAExtension.toBytes(skinId));
-        bytes = DHAExtension.replaceBytes(bytes, DHAExtension.toBytes(Integer.parseInt(this.skinId + soundId)),
-                DHAExtension.toBytes(Integer.parseInt(skinId + soundId)));
+        if (changeSoundId)
+            bytes = DHAExtension.replaceBytes(bytes, DHAExtension.toBytes(Integer.parseInt(this.skinId + soundId)),
+                    DHAExtension.toBytes(Integer.parseInt(skinId + soundId)));
         this.skinId = skinId;
     }
 
@@ -777,14 +817,14 @@ class SoundElement {
 class ListLabelElement {
     private byte[] bytes;
     public List<LabelElement> labelElements;
-    public Map<Integer,Integer> labelIndexMap;
+    public Map<Integer, Integer> labelIndexMap;
 
     public ListLabelElement(byte[] bytes) {
         this.bytes = bytes.clone();
         labelElements = new ArrayList<>();
         labelIndexMap = new HashMap<>();
         int start;
-        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S')
             start = DHAExtension.bytesToInt(bytes, 132);
         else
             start = 0;
@@ -803,7 +843,7 @@ class ListLabelElement {
     public int copyLabel(int sourceId, int targetId) throws Exception {
         if (!labelIndexMap.containsKey(sourceId)) {
             return 1;
-        }else if (!labelIndexMap.containsKey(targetId)){
+        } else if (!labelIndexMap.containsKey(targetId)) {
             return 2;
         }
 
@@ -821,9 +861,10 @@ class ListLabelElement {
             childBytes = DHAExtension.mergeBytes(childBytes, e.getBytes());
         }
         int start;
-        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S') {
             start = DHAExtension.bytesToInt(bytes, 132);
-        else
+            bytes = DHAExtension.replaceBytes(bytes, 12, 16, DHAExtension.toBytes(labelElements.size()));
+        } else
             start = 0;
         return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, start), childBytes);
     }
@@ -882,7 +923,7 @@ class ListIconElement {
         iconElements = new ArrayList<IconElement>();
         iconIndexDict = new HashMap<Integer, Integer>();
         int start;
-        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S')
             start = DHAExtension.bytesToInt(bytes, 132);
         else
             start = 0;
@@ -911,11 +952,16 @@ class ListIconElement {
         iconElements.set(iconIndexDict.get(sourceId), new IconElement(bytes));
         iconElements.get(iconIndexDict.get(sourceId)).setIconIndex(sourceId % 100);
         iconElements.get(iconIndexDict.get(sourceId)).setHeroId(sourceId / 100);
-        if (sourceId % 100 == 0 && swap) {
-            iconElements.get(iconIndexDict.get(targetId)).setHeroId(sourceId / 100);
-            iconElements.get(iconIndexDict.get(targetId)).setIconId(sourceId);
-            iconElements.get(iconIndexDict.get(targetId)).setIconIndex(targetId % 100);
-            iconElements.get(iconIndexDict.get(targetId)).setIconCode("30" + (sourceId / 100) + (sourceId % 100));
+        if (sourceId % 100 == 0) {
+            if (swap) {
+                iconElements.get(iconIndexDict.get(targetId)).setHeroId(sourceId / 100);
+                iconElements.get(iconIndexDict.get(targetId)).setIconId(sourceId);
+                iconElements.get(iconIndexDict.get(targetId)).setIconIndex(targetId % 100);
+                iconElements.get(iconIndexDict.get(targetId)).setIconCode("30" + (sourceId / 100) + (sourceId % 100));
+            }else{
+                iconElements.get(iconIndexDict.get(sourceId)).setIconId(sourceId);
+                iconElements.get(iconIndexDict.get(sourceId)).setIconCode("30" + (sourceId / 100) + (sourceId % 100));
+            }
         } else {
             iconElements.get(iconIndexDict.get(sourceId)).setIconId(sourceId);
         }
@@ -927,9 +973,10 @@ class ListIconElement {
             childBytes = DHAExtension.mergeBytes(childBytes, e.getBytes());
         }
         int start;
-        if (DHAExtension.indexOf(bytes, "MSES".getBytes()) == 0)
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S') {
             start = DHAExtension.bytesToInt(bytes, 132);
-        else
+            bytes = DHAExtension.replaceBytes(bytes, 12, 16, DHAExtension.toBytes(iconElements.size()));
+        } else
             start = 0;
         return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, start), childBytes);
     }

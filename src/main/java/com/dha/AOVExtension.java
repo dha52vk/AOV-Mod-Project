@@ -2313,7 +2313,7 @@ public class AOVExtension {
                 String heroCodeName = zis.getNextEntry().getName().split("/")[1];
                 zis.close();
 
-                boolean isAwakeSkin = isAwakeSkins != null && isAwakeSkins[l];
+                boolean isAwakeSkin = isAwakeSkins != null && l < isAwakeSkins.length && isAwakeSkins[l];
                 if (isAwakeSkin) {
                     heroCodeName = heroId + (skin < 10 ? "0" + skin : skin);
                     objectSetDirection += 
@@ -2391,6 +2391,7 @@ public class AOVExtension {
 
             content = String.join("\n", lines);
             outputBytes = content.getBytes(StandardCharsets.UTF_8);
+            DHAExtension.WriteAllText("D:/test2.xml", ProjectXML.convertDocumentToString(ProjectXML.convertStringToDocument(content)));
             outputBytes = AOVCompress(outputBytes);
             DHAExtension.WriteAllBytes(outputPath, outputBytes);
 

@@ -46,10 +46,11 @@ public class ModNew {
                 luachon = scanner.nextLine();
             }
             if (luachon.equals("0")) {
+                scanner.close();
                 return;
             }
             if (luachon.equals("1")) {
-                String id = "", originid = "";
+                String id = "";
                 System.out.print("Nhap id skin muon mod: ");
                 while (!skinidList.contains(id = scanner.nextLine()) && !id.equals("0")) {
                     System.out.print("Nhap lai id skin muon mod: ");
@@ -83,7 +84,9 @@ public class ModNew {
                 continue;
             } else if (luachon.equals("2")) {
                 System.out.print("Nhap ten pack: ");
-                modPackName = scanner.nextLine().trim();
+                while ((modPackName = scanner.nextLine().trim()).equals("")){
+                    System.out.print("Nhap lai ten pack: ");
+                }
                 if (new File(AOVModHelper.saveModPath + modPackName).exists()) {
                     System.out.print("Da co pack " + modPackName + " ban co muon loai bo pack cu ? (C/k): ");
                     luachon = scanner.nextLine().toLowerCase();
@@ -102,6 +105,11 @@ public class ModNew {
                 boolean thieu = false, trungtuong = false;
 
                 for (String id : idlist) {
+                    if (!tryParse(id)){
+                        thieu = true;
+                        System.out.println("Khong the xac dinh id " + id);
+                    }
+                        
                     if (heroIdMods.contains(id.substring(0, 3))) {
                         trungtuong = true;
                         break;
@@ -154,6 +162,14 @@ public class ModNew {
                 System.out.println("Mod xong sau " + simple.format(result));
             }
         }
+    }
 
+    public static boolean tryParse(String id) {
+        try{
+            Integer.parseInt(id);
+            return true;
+        }catch(Exception e){
+            return false;
+        }
     }
 }
