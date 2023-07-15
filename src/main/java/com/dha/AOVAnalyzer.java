@@ -302,6 +302,10 @@ class ProjectXML {
         return null;
     }
 
+    public static String prettierXml(String xml){
+        return convertDocumentToString(convertStringToDocument(xml));
+    }
+
     public static String convertDocumentToString(Document doc) {
         TransformerFactory tf = TransformerFactory.newInstance();
         Transformer transformer;
@@ -324,7 +328,7 @@ class ProjectXML {
     }
 
     public static Document convertStringToDocument(String xmlStr) {
-        xmlStr = xmlStr.trim().replaceFirst("^([\\W]+)<", "<");
+        xmlStr = xmlStr.trim().replaceAll("^([\\W]+)<", "<");
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder;
         try {

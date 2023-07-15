@@ -31,19 +31,41 @@ public class AOVCustomMod {
         // findAllActionsResource("F:/This
         // PC/Documents/AOV/CustomPack/custompack_150/files/Resources/1.50.1/Ages/Prefab_Characters/Prefab_Hero/150_HanXin/skill");
         // taopack();
-        
-        // saveHeroListTo("D:/herolisttested.txt");
+
+        // prettierXML("F:\\This PC\\Documents\\AOV\\New folder\\13011skill - Copy");
+
+        App.ktFile("F:\\This PC\\Documents\\AOV\\New folder\\13011skill - Copy",
+        "F:\\This PC\\Documents\\AOV\\cachemod\\130_GongBenWuZang\\skill");
 
         // ListDeviceSupport listDevices = new ListDeviceSupport();
         // listDevices.addNewDevice("Xiaomi 2201117TG");
-        // DHAExtension.WriteAllBytes("D:/VeryHighFrameModeBlackList.bytes", listDevices.getBytes());
+        // DHAExtension.WriteAllBytes("D:/VeryHighFrameModeBlackList.bytes",
+        // listDevices.getBytes());
     }
-    
-    public static void saveHeroListTo(String path){
-        List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText("D:/skinlist(label).json"), HeroList.class).heros;
-        String content="";
-        for(Hero hero : heroList){
-            content+="\n"+hero.name;
+
+    public static void prettierXML(String path) {
+        if (!new File(path).exists())
+            return;
+        if (new File(path).isFile()) {
+            try {
+                DHAExtension.WriteAllText(path, ProjectXML.prettierXml(DHAExtension.ReadAllText(path)));
+            } catch (Exception e) {
+
+            }
+            return;
+        }
+        for (String child : new File(path).list()) {
+            String childPath = path + "/" + child;
+            prettierXML(childPath);
+        }
+    }
+
+    public static void saveHeroListTo(String path) {
+        List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText("D:/skinlist(label).json"),
+                HeroList.class).heros;
+        String content = "";
+        for (Hero hero : heroList) {
+            content += "\n" + hero.name;
         }
         DHAExtension.WriteAllText(path, content);
 
