@@ -11,7 +11,9 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
@@ -20,6 +22,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
 import com.github.luben.zstd.Zstd;
 import com.google.gson.Gson;
@@ -34,8 +37,32 @@ public class AOVCustomMod {
 
         // prettierXML("F:\\This PC\\Documents\\AOV\\New folder\\13011skill - Copy");
 
-        App.ktFile("F:\\This PC\\Documents\\AOV\\New folder\\13011skill - Copy",
-        "F:\\This PC\\Documents\\AOV\\cachemod\\130_GongBenWuZang\\skill");
+        // App.ktFile("F:\\This PC\\Documents\\AOV\\New folder\\13011skill - Copy",
+        // "F:\\This PC\\Documents\\AOV\\cachemod\\130_GongBenWuZang\\skill");
+
+        AOVModHelper helper = new AOVModHelper();
+        helper.setEcho(true);
+        // Map<String, Skin> skinMap = new HashMap<>();
+        // List<Hero> heroList = new
+        // Gson().fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
+        // HeroList.class).heros;
+        // for (Hero hero : heroList){
+        // for (Skin skin : hero.skins){
+        // skinMap.put(skin.id, skin);
+        // }
+        // }
+        // helper.setModPackName("testpack");
+        // DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
+        // helper.modHaste(new ArrayList<>(Arrays.asList(new ModInfo[]{
+        // new ModInfo(new ArrayList<>(Arrays.asList(new Skin[]{
+        // new Skin("1571", SkinLabel.Default)
+        // })), skinMap.get("15711")
+        // , new ModSettings(true, true, true, true, true, true, true))
+        // })));
+        
+        
+        
+        // DHAExtension.WriteAllBytes("D:/test2.bytes", Zstd.decompress(compressed, zstdDict, (int) Zstd.decompressedSize(compressed)));
 
         // ListDeviceSupport listDevices = new ListDeviceSupport();
         // listDevices.addNewDevice("Xiaomi 2201117TG");

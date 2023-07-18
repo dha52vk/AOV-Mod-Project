@@ -4,7 +4,6 @@ public class Skin {
     public String id;
     public String name;
     public SkinLabel label;
-    public boolean changedLabel;
     public boolean changeAnim;
     public boolean hasDeathEffect;
     public boolean isAwakeSkin;

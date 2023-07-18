@@ -102,6 +102,8 @@ public class ModNew {
                 List<ModInfo> modList = new ArrayList<>();
                 List<String> heroIdMods = new ArrayList<>();
                 String[] idlist = scanner.nextLine().trim().split(" ");
+                if (idlist.length==1 && idlist[0].equals("0"))
+                    continue;
                 boolean thieu = false, trungtuong = false;
 
                 for (String id : idlist) {

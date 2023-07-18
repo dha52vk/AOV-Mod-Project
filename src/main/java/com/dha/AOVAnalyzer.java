@@ -71,6 +71,128 @@ class AnalyzerType {
     public static String stringArr = "TypeSystem.String[]";
 }
 
+class CustomNode {
+    public static Node getChild(Node node, String tagName) {
+        for (int i = 0; i < node.getChildNodes().getLength(); i++) {
+            if (node.getChildNodes().item(i).getNodeName().equals(tagName)) {
+                return node.getChildNodes().item(i);
+            }
+        }
+        return null;
+    }
+
+    public static String getChildValue(Node node, String tagName, String childName) {
+        for (int i = 0; i < node.getChildNodes().getLength(); i++) {
+            if (node.getChildNodes().item(i).getNodeName().equals(tagName)) {
+                if (node.getChildNodes().item(i).getAttributes().getNamedItem("name").getNodeValue()
+                        .equals(childName)) {
+                    return node.getChildNodes().item(i).getAttributes().getNamedItem("value").getNodeValue();
+                }
+            }
+        }
+        return null;
+    }
+
+    public static String getAttribute(Node node, String attrName) {
+        try {
+            return node.getAttributes().getNamedItem(attrName).getNodeValue();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static void setChildValue(Node node, String tagName, String childName, String newValue) throws Exception {
+        for (int i = 0; i < node.getChildNodes().getLength(); i++) {
+            if (node.getChildNodes().item(i).getNodeName().equals(tagName)) {
+                if (node.getChildNodes().item(i).getAttributes().getNamedItem("name").getNodeValue()
+                        .equals(childName)) {
+                    node.getChildNodes().item(i).getAttributes().getNamedItem("value").setNodeValue(newValue);
+                    return;
+                }
+            }
+        }
+        throw new Exception("not found child " + childName + "(" + tagName + ")");
+    }
+
+    public static void appendNode(Node parent, Node newChild) {
+        newChild = parent.getOwnerDocument().importNode(newChild, true);
+        parent.appendChild(newChild);
+    }
+
+    public static void insert(Node parent, int index, Node newChild) throws Exception {
+        int i = -1, j;
+        for (j = 0; j < parent.getChildNodes().getLength(); j++) {
+            if (!parent.getChildNodes().item(j).getNodeName().equals("#text")) {
+                i++;
+                if (i == index) {
+                    break;
+                }
+            }
+        }
+        if (i < index) {
+            throw new Exception("index too large");
+        } else {
+            newChild = parent.getOwnerDocument().importNode(newChild, true);
+            parent.insertBefore(newChild, parent.getChildNodes().item(j));
+        }
+    }
+
+    public static void remove(Node parent, int index) throws Exception {
+        int i = -1, j;
+        for (j = 0; j < parent.getChildNodes().getLength(); j++) {
+            if (!parent.getChildNodes().item(j).getNodeName().equals("#text")) {
+                i++;
+                if (i == index) {
+                    break;
+                }
+            }
+        }
+        if (i < index) {
+            throw new Exception("index too large");
+        } else {
+            parent.removeChild(parent.getChildNodes().item(j));
+        }
+    }
+
+    public static void remove(Node parent, String childTagName, String childName) {
+        for (int j = 0; j < parent.getChildNodes().getLength(); j++) {
+            if (parent.getChildNodes().item(j).getNodeName().equals(childTagName)
+                    && parent.getChildNodes().item(j).getAttributes().getNamedItem("name").getNodeValue()
+                            .equals(childName)) {
+                parent.removeChild(parent.getChildNodes().item(j));
+                break;
+            }
+        }
+    }
+
+    public static Node newNode(String tagName, Attribute[] attributes) {
+
+        String xml = "";
+        if (attributes != null) {
+            xml = "<" + tagName;
+            for (int i = 0; i < attributes.length; i++) {
+                xml += " " + attributes[i].name + "=\"" + attributes[i].value + "\"";
+            }
+            xml += "/>";
+        } else {
+            xml = "<" + tagName + "/>";
+        }
+        Node node = ProjectXML.convertStringToDocument(xml).getDocumentElement();
+
+        return node;
+    }
+}
+
+class Attribute {
+    String name;
+    String value;
+
+    public Attribute(String name, String value) {
+        this.name = name;
+        this.value = value;
+    }
+}
+
 class ProjectXML {
     private Document doc;
 
@@ -160,6 +282,25 @@ class ProjectXML {
             }
         }
         return targetList;
+    }
+
+    public static Node getOrConditionNode(int orConditionIndex, String guid, ConditionInfo[] conditionInfos) {
+        String xml = "<Track trackName=\"CombinationConditionDuration" + orConditionIndex
+                + "\" eventType=\"CombinationConditionDuration\" guid=\"" + guid
+                + "\" enabled=\"true\" useRefParam=\"false\" refParamName=\"\" r=\"0.000\" g=\"0.000\" b=\"0.000\" execOnForceStopped=\"false\" execOnActionCompleted=\"false\" stopAfterLastEvent=\"true\"><Event eventName=\"CombinationConditionDuration\" time=\"0.000\" isDuration=\"false\" guid=\"e77a9cb5-f0bb-4bce-979c-8f51cbc83b95\"> <Array name=\"CondiTrackIds\" refParamName=\"\" useRefParam=\"false\" type=\"TrackObject\">";
+        for (int i = 0; i < conditionInfos.length; i++) {
+            xml += "<TrackObject id=\"" + conditionInfos[i].index + "\" guid=\"" + guid + "\" />";
+        }
+        xml += "</Array><Array name=\"CheckCondiTrackStatus\" refParamName=\"\" useRefParam=\"false\" type=\"bool\">";
+        for (int i = 0; i < conditionInfos.length; i++) {
+            xml += "<bool value=\"" + conditionInfos[i].status + "\" />";
+        }
+        xml += "</Array><Array name=\"IsOrConditions\" refParamName=\"\" useRefParam=\"false\" type=\"bool\">";
+        for (int i = 0; i < conditionInfos.length; i++) {
+            xml += "<bool value=\"" + conditionInfos[i].status + "\" />";
+        }
+        xml += "</Array></Event></Track>";
+        return convertStringToDocument(xml).getDocumentElement();
     }
 
     public static Node getConditionNode(int conditionIndex, String guid) {
@@ -278,6 +419,34 @@ class ProjectXML {
         }
     }
 
+    public void changeCheckVirtual() {
+        List<Node> trackList = getTrackNodeByType("CheckSkinIdVirtualTick", false);
+        for (int i = 0; i < trackList.size(); i++) {
+            Node track = trackList.get(i);
+            track.getAttributes().getNamedItem("eventType").setNodeValue(track.getAttributes().getNamedItem("eventType")
+                    .getNodeValue().replaceAll("(?i)CheckSkinIdVirtualTick", "CheckSkinIdTick"));
+            track.getAttributes().getNamedItem("trackName").setNodeValue(track.getAttributes().getNamedItem("trackName")
+                    .getNodeValue().replaceAll("(?i)CheckSkinIdVirtualTick", "CheckSkinIdTick"));
+            Node event = track.getChildNodes().item(track.getChildNodes().getLength() - 2);
+            event.getAttributes().getNamedItem("eventName").setNodeValue(event.getAttributes().getNamedItem("eventName")
+                    .getNodeValue().replaceAll("(?i)CheckSkinIdVirtualTick", "CheckSkinIdTick"));
+            NodeList eventChild = event.getChildNodes();
+            for (int j = 0; j < eventChild.getLength(); j++) {
+                Node child = eventChild.item(j);
+                if (child.getNodeName().equals("bool")
+                        && child.getAttributes().getNamedItem("name").getNodeValue().equals("useNegateValue")) {
+                    child.getAttributes().getNamedItem("name").setNodeValue("bEqual");
+                    if (child.getAttributes().getNamedItem("value").getNodeValue().equals("true")) {
+                        child.getAttributes().getNamedItem("value").setNodeValue("false");
+                    } else {
+                        event.removeChild(child);
+                        j--;
+                    }
+                }
+            }
+        }
+    }
+
     public String getXmlString() {
         return convertDocumentToString(doc);
     }
@@ -302,7 +471,7 @@ class ProjectXML {
         return null;
     }
 
-    public static String prettierXml(String xml){
+    public static String prettierXml(String xml) {
         return convertDocumentToString(convertStringToDocument(xml));
     }
 
@@ -342,8 +511,42 @@ class ProjectXML {
     }
 }
 
+class ConditionInfo {
+    int index;
+    String guid;
+    boolean status;
+
+    public ConditionInfo(int index, String guid, boolean status) {
+        this.index = index;
+        this.guid = guid;
+        this.status = status;
+    }
+}
+
 interface StringOperator {
     public String handle(String s);
+}
+
+class LanguageMap {
+    Map<String, String> languageMap;
+
+    public LanguageMap(String s) {
+        languageMap = new HashMap<>();
+
+        String[] lines = s.split("\\r?\\n|\\r");
+        for (String line : lines) {
+            String[] split = line.split(" = ");
+            languageMap.put(split[0], split[1]);
+        }
+    }
+
+    public String getValue(String key) {
+        if (languageMap.containsKey(key)) {
+            return languageMap.get(key);
+        } else {
+            return null;
+        }
+    }
 }
 
 class ListDeviceSupport {
@@ -408,14 +611,14 @@ class ListMarkElement {
         while (start < bytes.length) {
             count = DHAExtension.bytesToInt(bytes, start) + 4;
             MarkElement m = new MarkElement(Arrays.copyOfRange(bytes, start, start + count));
-            if (m.markEffects.size()!=0)
+            if (m.markEffects.size() != 0)
                 listHeroId.add(m.getHeroId());
             markElements.add(m);
             start += count;
         }
     }
 
-    public boolean containsHeroId(int heroId){
+    public boolean containsHeroId(int heroId) {
         return listHeroId.contains(heroId);
     }
 
@@ -545,7 +748,7 @@ class ListBulletElement {
         }
     }
 
-    public boolean containsHeroId(int heroId){
+    public boolean containsHeroId(int heroId) {
         return heroIdList.contains(heroId);
     }
 
@@ -962,12 +1165,21 @@ class ListIconElement {
                 iconElements.get(iconIndexDict.get(targetId)).setIconId(sourceId);
                 iconElements.get(iconIndexDict.get(targetId)).setIconIndex(targetId % 100);
                 iconElements.get(iconIndexDict.get(targetId)).setIconCode("30" + (sourceId / 100) + (sourceId % 100));
-            }else{
+            } else {
                 iconElements.get(iconIndexDict.get(sourceId)).setIconId(sourceId);
                 iconElements.get(iconIndexDict.get(sourceId)).setIconCode("30" + (sourceId / 100) + (sourceId % 100));
             }
         } else {
             iconElements.get(iconIndexDict.get(sourceId)).setIconId(sourceId);
+            iconElements.get(iconIndexDict.get(sourceId)).setIconCode("30" + (sourceId / 100) + (sourceId % 100));
+        }
+    }
+
+    public IconElement get(int iconId) {
+        try {
+            return iconElements.get(iconIndexDict.get(iconId));
+        } catch (Exception e) {
+            return null;
         }
     }
 
