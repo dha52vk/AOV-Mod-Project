@@ -28,7 +28,7 @@ public class AOVModHelper {
     public static String ActionsParentPath = "F:/This PC/Documents/AOV/Resources/" + AOVversion + "/Ages/Prefab_Characters/Prefab_Hero/";
     public static String DatabinPath = "F:/This PC/Documents/AOV/Resources/" + AOVversion + "/Databin/Client/";
     public static String AssetRefsPath = "F:/This PC/Documents/AOV/Resources/" + AOVversion + "/AssetRefs/";
-    public static String LanguageCode =  "CHT_Garena_TW";// "VN_Garena_VN";
+    public static String LanguageCode = "VN_Garena_VN"; // "CHT_Garena_TW";
     public static String LanguagePath = "F:/This PC/Documents/AOV/Resources/" + AOVversion + "/Languages/" + LanguageCode + "/";
     public static String SpecialPath = ".special/";
     public static String saveModPath = "F:/This PC/Documents/AOV/";
@@ -97,6 +97,14 @@ public class AOVModHelper {
             modLiteBullet(modList);
             modSkillMark(modList);
             modSound(modList);
+            if (modList.size() == 0){
+                update("Creating highlight pack...");
+                DHAExtension.copy(saveModPath + modPackName, saveModPath + modPackName + " (highlight)");
+                String actionsPath = saveModPath + modPackName + " (highlight)"
+                            + "/files/Resources/" + AOVversion + "/Ages/Prefab_Characters/Prefab_Hero/Actor_"
+                            + modList.get(0).newSkin.id.substring(0, 3) + "_Actions.pkg.bytes";
+                highlightSkill(actionsPath, 4);
+            }
             if (modList.size() > 4) {
                 update("Creating low pack...");
                 DHAExtension.copy(saveModPath + modPackName, saveModPath + modPackName + " (may yeu)");
@@ -845,6 +853,10 @@ public class AOVModHelper {
 
         update(" Fix khung...");
         modAssetRef(modList);
+    }
+
+    public void highlightSkill(String sourceActionsPath, int hightlightLevel) throws Exception{
+        highlightSkill(Arrays.asList(new String[]{sourceActionsPath}), Arrays.asList(new Integer[]{hightlightLevel}));
     }
 
     public void highlightSkill(List<String> sourceActionsPaths, List<Integer> hightlightLevels) throws Exception{
