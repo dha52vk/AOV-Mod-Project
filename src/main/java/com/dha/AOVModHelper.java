@@ -2,21 +2,16 @@ package com.dha;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.Condition;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -911,16 +906,6 @@ public class AOVModHelper {
             ZipExtension.zipDir(cacheModPath + filemodName.split("/")[0],
                     inputZipPath);
         }
-    }
-
-    private int getHighlightLevel(String fileName){
-        if (fileName.contains("E"))
-            return 0;
-        if (fileName.startsWith("A"))
-            return 2;
-        if (fileName.startsWith("S") || fileName.startsWith("U"))
-            return 1;
-        return 0;
     }
 
     public void modAssetRef(List<ModInfo> modList) throws Exception {

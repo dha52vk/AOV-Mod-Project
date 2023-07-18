@@ -1,7 +1,5 @@
 package com.dha;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -14,7 +12,6 @@ import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
