@@ -28,10 +28,13 @@ public class FindNewSkin {
 
         List<String> skinIdList = new ArrayList<>();
         Map<String, String> skinName = new HashMap<>();
-        LanguageMap languageMap = new LanguageMap(new String(
-                AOVAnalyzer.AOVDecompress(DHAExtension.ReadAllBytes(AOVModHelper.LanguagePath + "languageMap_Xls.txt")))
-                + "\n" + new String(AOVAnalyzer.AOVDecompress(
-                        DHAExtension.ReadAllBytes(AOVModHelper.LanguagePath + "lanMapIncremental.txt"))));
+        String languaStr = new String(
+                AOVAnalyzer.AOVDecompress(DHAExtension.ReadAllBytes(AOVModHelper.LanguagePath + "languageMap_Xls.txt")));
+        byte[] decompress = AOVAnalyzer.AOVDecompress(
+                        DHAExtension.ReadAllBytes(AOVModHelper.LanguagePath + "lanMapIncremental.txt"));
+        if (decompress != null)
+            languaStr += "\n" + new String(decompress);
+        LanguageMap languageMap = new LanguageMap(languaStr);
         ListIconElement iconList = new ListIconElement(AOVAnalyzer
                 .AOVDecompress(DHAExtension.ReadAllBytes(AOVModHelper.DatabinPath + "Actor/heroSkin.bytes")));
         List<Hero> heroList = gson.fromJson(DHAExtension.ReadAllText("D:/skinlist(label).json"), HeroList.class).heros;
@@ -139,10 +142,10 @@ public class FindNewSkin {
             for (int j = 0; j < skinList.size(); j++) {
                 if (skinList.get(j).label == null) {
                     System.out.print(
-                            "Nhap bac cho skin " + hero.name + skinList.get(j).name + "(" + skinList.get(j).id + "): ");
+                            "Nhap bac cho skin " + hero.name + " " + skinList.get(j).name + "(" + skinList.get(j).id + "): ");
                     String label;
                     while (!labelAccepts.contains(label = scanner.nextLine())) {
-                        System.out.print("Nhap lai bac cho skin " + hero.name + skinList.get(j).name + "("
+                        System.out.print("Nhap lai bac cho skin " + hero.name + " " + skinList.get(j).name + "("
                                 + skinList.get(j).id + "): ");
                     }
                     switch (label) {

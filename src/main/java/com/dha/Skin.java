@@ -25,11 +25,10 @@ public class Skin {
     public int getSkinLevel(){
         switch(id){
             case "5434":
-                return 2;
-            case "5213":
-                return 3;
             case "1805":
-                return 2;
+                return SkinLabel.S.skinLevel;
+            case "5213":
+                return SkinLabel.S_Plus.skinLevel;
             default:
                 return label.skinLevel;
         }
@@ -44,7 +43,8 @@ public class Skin {
 enum SkinLabel{
     Default(0),
     A(1), S(2), S_Plus(3), SS(4), SSS_HH(5),
-    A_HH(1), S_HH(2), S_Plus_HH(3), SS_HH(4), SS_Chroma(4);
+    A_HH(1), S_HH(2), S_Plus_HH(3), SS_HH(4), SS_Chroma(4),
+    FMVP(3);
 
     final int skinLevel;
 
