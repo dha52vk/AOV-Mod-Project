@@ -13,6 +13,16 @@ import java.util.Arrays;
 import java.util.List;
 
 public class DHAExtension {
+    public static boolean listContainsElementFromOther(Object[] arr1, Object[] arr2){
+        for (int i = 0; i < arr1.length; i++){
+            for (int j = 0; j < arr2.length; j++){
+                if (arr1[i].equals(arr2[j]))
+                    return true;
+            }
+        }
+        return false;
+    }
+
     public static int pow(int n1, int n2){
         int l =1;
         for (int i = 0; i<n2;i++){

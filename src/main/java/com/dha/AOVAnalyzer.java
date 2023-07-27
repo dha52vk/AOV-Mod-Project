@@ -31,7 +31,7 @@ import com.github.luben.zstd.ZstdDictCompress;
 public class AOVAnalyzer {
 
     public static byte[] AOVDecompress(byte[] compressed) {
-        String zstdDictPath = "D:/zstd_dict.bin";
+        String zstdDictPath = "zstd_dict.bin";
         byte[] zstdDict = DHAExtension.ReadAllBytes(zstdDictPath);
 
         int start = DHAExtension.indexOf(compressed, new byte[] { 40, (byte) 181, 47, (byte) 253 });
@@ -42,7 +42,7 @@ public class AOVAnalyzer {
     }
 
     public static byte[] AOVCompress(byte[] uncompress) {
-        String zstdDictPath = "D:/zstd_dict.bin";
+        String zstdDictPath = "zstd_dict.bin";
         byte[] zstdDict = DHAExtension.ReadAllBytes(zstdDictPath);
         ZstdDictCompress dict = new ZstdDictCompress(zstdDict, 17);
 
@@ -68,130 +68,8 @@ class AnalyzerType {
     public static String stringArr = "TypeSystem.String[]";
 }
 
-class CustomNode {
-    public static Node getChild(Node node, String tagName) {
-        for (int i = 0; i < node.getChildNodes().getLength(); i++) {
-            if (node.getChildNodes().item(i).getNodeName().equals(tagName)) {
-                return node.getChildNodes().item(i);
-            }
-        }
-        return null;
-    }
-
-    public static String getChildValue(Node node, String tagName, String childName) {
-        for (int i = 0; i < node.getChildNodes().getLength(); i++) {
-            if (node.getChildNodes().item(i).getNodeName().equals(tagName)) {
-                if (node.getChildNodes().item(i).getAttributes().getNamedItem("name").getNodeValue()
-                        .equals(childName)) {
-                    return node.getChildNodes().item(i).getAttributes().getNamedItem("value").getNodeValue();
-                }
-            }
-        }
-        return null;
-    }
-
-    public static String getAttribute(Node node, String attrName) {
-        try {
-            return node.getAttributes().getNamedItem(attrName).getNodeValue();
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    public static void setChildValue(Node node, String tagName, String childName, String newValue) throws Exception {
-        for (int i = 0; i < node.getChildNodes().getLength(); i++) {
-            if (node.getChildNodes().item(i).getNodeName().equals(tagName)) {
-                if (node.getChildNodes().item(i).getAttributes().getNamedItem("name").getNodeValue()
-                        .equals(childName)) {
-                    node.getChildNodes().item(i).getAttributes().getNamedItem("value").setNodeValue(newValue);
-                    return;
-                }
-            }
-        }
-        throw new Exception("not found child " + childName + "(" + tagName + ")");
-    }
-
-    public static void appendNode(Node parent, Node newChild) {
-        newChild = parent.getOwnerDocument().importNode(newChild, true);
-        parent.appendChild(newChild);
-    }
-
-    public static void insert(Node parent, int index, Node newChild) throws Exception {
-        int i = -1, j;
-        for (j = 0; j < parent.getChildNodes().getLength(); j++) {
-            if (!parent.getChildNodes().item(j).getNodeName().equals("#text")) {
-                i++;
-                if (i == index) {
-                    break;
-                }
-            }
-        }
-        if (i < index) {
-            throw new Exception("index too large");
-        } else {
-            newChild = parent.getOwnerDocument().importNode(newChild, true);
-            parent.insertBefore(newChild, parent.getChildNodes().item(j));
-        }
-    }
-
-    public static void remove(Node parent, int index) throws Exception {
-        int i = -1, j;
-        for (j = 0; j < parent.getChildNodes().getLength(); j++) {
-            if (!parent.getChildNodes().item(j).getNodeName().equals("#text")) {
-                i++;
-                if (i == index) {
-                    break;
-                }
-            }
-        }
-        if (i < index) {
-            throw new Exception("index too large");
-        } else {
-            parent.removeChild(parent.getChildNodes().item(j));
-        }
-    }
-
-    public static void remove(Node parent, String childTagName, String childName) {
-        for (int j = 0; j < parent.getChildNodes().getLength(); j++) {
-            if (parent.getChildNodes().item(j).getNodeName().equals(childTagName)
-                    && parent.getChildNodes().item(j).getAttributes().getNamedItem("name").getNodeValue()
-                            .equals(childName)) {
-                parent.removeChild(parent.getChildNodes().item(j));
-                break;
-            }
-        }
-    }
-
-    public static Node newNode(String tagName, Attribute[] attributes) {
-
-        String xml = "";
-        if (attributes != null) {
-            xml = "<" + tagName;
-            for (int i = 0; i < attributes.length; i++) {
-                xml += " " + attributes[i].name + "=\"" + attributes[i].value + "\"";
-            }
-            xml += "/>";
-        } else {
-            xml = "<" + tagName + "/>";
-        }
-        Node node = ProjectXML.convertStringToDocument(xml).getDocumentElement();
-
-        return node;
-    }
-}
-
-class Attribute {
-    String name;
-    String value;
-
-    public Attribute(String name, String value) {
-        this.name = name;
-        this.value = value;
-    }
-}
-
 class ProjectXML {
-    private Document doc;
+    public Document doc;
 
     public ProjectXML(String xml) throws Exception {
         doc = convertStringToDocument(xml);
@@ -281,6 +159,32 @@ class ProjectXML {
         return targetList;
     }
 
+    public static void removeTrackCondition(Node track, int condiIndex){
+        if (track.getChildNodes() == null)
+            return;
+        for (int i = 0; i < track.getChildNodes().getLength(); i++){
+            if (track.getChildNodes().item(i).getNodeName().equals("Condition")){
+                if (Integer.parseInt(CustomNode.getAttribute(track.getChildNodes().item(i), "id")) == condiIndex){
+                    track.removeChild(track.getChildNodes().item(i));
+                    i--;
+                }
+            }
+        }
+    }
+
+    public static Map<Integer, Boolean> getTrackConditions(Node track){
+        if (track.getChildNodes() == null)
+            return new HashMap<>();
+        Map<Integer, Boolean> listConditionIndex = new HashMap<>();
+        for (int i = 0; i < track.getChildNodes().getLength(); i++){
+            Node child = track.getChildNodes().item(i);
+            if (child.getNodeName().equals("Condition")){
+                listConditionIndex.put(Integer.parseInt(CustomNode.getAttribute(child, "id")), CustomNode.getAttribute(child, "status").equals("true"));
+            }
+        }
+        return listConditionIndex;
+    }
+
     public static Node getOrConditionNode(int orConditionIndex, String guid, ConditionInfo[] conditionInfos) {
         String xml = "<Track trackName=\"CombinationConditionDuration" + orConditionIndex
                 + "\" eventType=\"CombinationConditionDuration\" guid=\"" + guid
@@ -305,17 +209,32 @@ class ProjectXML {
     }
 
     public static Node getConditionNode(int conditionIndex, String guid, boolean status) {
+        return getConditionNode(new ConditionInfo(conditionIndex, guid, status));
+    }
+
+    public static Node getConditionNode(ConditionInfo info) {
         return convertStringToDocument(
-                "      <Condition id=\"" + conditionIndex + "\" guid=\"" + guid + "\" status=\"" + (status) + "\"/>")
+                "      <Condition id=\"" + info.index + "\" guid=\"" + info.guid + "\" status=\"" + (info.status) + "\"/>")
                 .getDocumentElement().cloneNode(true);
     }
 
-    public static Node getCheckSkinTickNode(int trackIndex, int skinId) {
+    public static Node getCheckSkinTickNode(int trackIndex, String guid, int skinId, int type) {
+        String objId="", objName="";
+        switch (type){
+            case 0:
+                objId = "0";
+                objName = "self";
+                break;
+            case 1:
+                objId = "1";
+                objName = "target";
+                break;
+        }
         return convertStringToDocument("<Track trackName=\"CheckSkinIdTick" + trackIndex
-                + "\" eventType=\"CheckSkinIdTick\" guid=\"Mod_by_" + AOVModHelper.ChannelName + "_" + skinId
+                + "\" eventType=\"CheckSkinIdTick\" guid=\"" + guid
                 + "\" enabled=\"true\" r=\"0.000\" g=\"0.000\" b=\"0.000\" stopAfterLastEvent=\"true\">"
                 + "\n  <Event eventName=\"CheckSkinIdTick\" time=\"0.000\" isDuration=\"false\">"
-                + "\n    <TemplateObject name=\"targetId\" id=\"1\" objectName=\"target\" isTemp=\"false\" refParamName=\"\" useRefParam=\"false\" />"
+                + "\n    <TemplateObject name=\"targetId\" id=\"" + objId + "\" objectName=\"" + objName + "\" isTemp=\"false\" refParamName=\"\" useRefParam=\"false\" />"
                 + "\n    <int name=\"skinId\" value=\"" + skinId + "\" refParamName=\"\" useRefParam=\"false\" />"
                 + "\n    <bool name=\"bSkipLogicCheck\" value=\"true\" refParamName=\"\" useRefParam=\"false\" />"
                 + "\n  </Event>"
@@ -517,6 +436,10 @@ class ConditionInfo {
         this.index = index;
         this.guid = guid;
         this.status = status;
+    }
+
+    public ConditionInfo changeStatus(boolean status){
+        return new ConditionInfo(index, guid, status);
     }
 }
 
@@ -934,15 +857,21 @@ class ListSoundElement {
         }
     }
 
-    public void copySound(int baseId, int targetId) {
+    public void copySound(int baseId, int targetId){
+        copySound(baseId, targetId, true);
+    }
+
+    public void copySound(int baseId, int targetId, boolean removeOldSound) {
         List<SoundElement> targetSounds = new ArrayList<>();
         for (int i = 0; i < soundElements.size(); i++) {
             if (soundElements.get(i).skinId == baseId) {
-                soundElements.remove(i);
-                i--;
+                if (removeOldSound){
+                    soundElements.remove(i);
+                    i--;
+                }
             } else if (soundElements.get(i).skinId == targetId) {
                 SoundElement sound = new SoundElement(soundElements.get(i).getBytes());
-                sound.setSkinId(baseId);
+                sound.setSkinId(baseId, removeOldSound);
                 targetSounds.add(sound);
             }
         }
@@ -1044,6 +973,16 @@ class ListLabelElement {
         }
     }
 
+    public void setLabel (int sourceId, byte[] labelBytes) throws Exception{
+        if (!labelIndexMap.containsKey(sourceId)) {
+            throw new Exception("not found label for id " + sourceId);
+        }
+        labelElements.set(labelIndexMap.get(sourceId), new LabelElement(labelBytes));
+        labelElements.get(labelIndexMap.get(sourceId)).setLabelIndex(sourceId % 100);
+        labelElements.get(labelIndexMap.get(sourceId)).setHeroId(sourceId / 100);
+        labelElements.get(labelIndexMap.get(sourceId)).setLabelId(sourceId);
+    }
+
     public int copyLabel(int sourceId, int targetId) throws Exception {
         if (!labelIndexMap.containsKey(sourceId)) {
             return 1;
@@ -1141,6 +1080,17 @@ class ListIconElement {
             iconElements.add(ic);
             start += count;
         }
+    }
+
+    public void setIcon(int sourceId, byte[] iconBytes) throws Exception{
+        if (!iconIndexDict.containsKey(sourceId)) {
+            throw new Exception("not found id " + sourceId);
+        }
+        iconElements.set(iconIndexDict.get(sourceId), new IconElement(iconBytes));
+        iconElements.get(iconIndexDict.get(sourceId)).setIconIndex(sourceId % 100);
+        iconElements.get(iconIndexDict.get(sourceId)).setHeroId(sourceId / 100);
+        iconElements.get(iconIndexDict.get(sourceId)).setIconId(sourceId);
+        iconElements.get(iconIndexDict.get(sourceId)).setIconCode("30" + (sourceId / 100) + (sourceId % 100));
     }
 
     public void copyIcon(int sourceId, int targetId) throws Exception {

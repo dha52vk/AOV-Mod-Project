@@ -25,6 +25,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import com.github.luben.zstd.Zstd;
+import com.github.luben.zstd.ZstdDecompressCtx;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -41,33 +42,31 @@ public class AOVCustomMod {
         // "F:\\This PC\\Documents\\AOV\\cachemod\\130_GongBenWuZang\\skill");
 
         AOVModHelper helper = new AOVModHelper();
+        ModSettings turnOnAll = new ModSettings(true, true, true, true, true, true, true);
         helper.setEcho(true);
-        // Map<String, Skin> skinMap = new HashMap<>();
-        // List<Hero> heroList = new
-        // Gson().fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
-        // HeroList.class).heros;
-        // for (Hero hero : heroList){
-        // for (Skin skin : hero.skins){
-        // skinMap.put(skin.id, skin);
-        // }
-        // }
-        // helper.setModPackName("testpack");
-        // DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
-        // helper.modHaste(new ArrayList<>(Arrays.asList(new ModInfo[]{
-        // new ModInfo(new ArrayList<>(Arrays.asList(new Skin[]{
-        // new Skin("1571", SkinLabel.Default)
-        // })), skinMap.get("15711")
-        // , new ModSettings(true, true, true, true, true, true, true))
-        // })));
-        
-        
-        
-        // DHAExtension.WriteAllBytes("D:/test2.bytes", Zstd.decompress(compressed, zstdDict, (int) Zstd.decompressedSize(compressed)));
-
-        // ListDeviceSupport listDevices = new ListDeviceSupport();
-        // listDevices.addNewDevice("Xiaomi 2201117TG");
-        // DHAExtension.WriteAllBytes("D:/VeryHighFrameModeBlackList.bytes",
-        // listDevices.getBytes());
+        Map<String, Skin> skinMap = new HashMap<>();
+        List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
+                HeroList.class).heros;
+        for (Hero hero : heroList) {
+            for (Skin skin : hero.skins) {
+                skinMap.put(skin.id, skin);
+            }
+        }
+        helper.setModPackName("testpack");
+        DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
+        String[] baseSkin = "1901 1902 1904 1906 1909".split(" ");
+        String[] newSkin = "1908 19010 1907 19013 19014".split(" ");
+        List<ModInfo> modList = new ArrayList<>();
+        for (int i = 0; i < baseSkin.length; i++){
+            modList.add(new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
+                        new Skin(baseSkin[i], SkinLabel.Default)
+                })), skinMap.get(newSkin[i]), turnOnAll));
+        }
+        helper.modInfos(modList);
+        helper.modIcon(modList);
+        helper.modLabel(modList);
+        helper.modSound(modList);
+        helper.modActionsMulti(modList);
     }
 
     public static void prettierXML(String path) {
@@ -88,7 +87,7 @@ public class AOVCustomMod {
     }
 
     public static void saveHeroListTo(String path) {
-        List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText("D:/skinlist(label).json"),
+        List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
                 HeroList.class).heros;
         String content = "";
         for (Hero hero : heroList) {
