@@ -159,12 +159,12 @@ class ProjectXML {
         return targetList;
     }
 
-    public static void removeTrackCondition(Node track, int condiIndex){
+    public static void removeTrackCondition(Node track, int condiIndex) {
         if (track.getChildNodes() == null)
             return;
-        for (int i = 0; i < track.getChildNodes().getLength(); i++){
-            if (track.getChildNodes().item(i).getNodeName().equals("Condition")){
-                if (Integer.parseInt(CustomNode.getAttribute(track.getChildNodes().item(i), "id")) == condiIndex){
+        for (int i = 0; i < track.getChildNodes().getLength(); i++) {
+            if (track.getChildNodes().item(i).getNodeName().equals("Condition")) {
+                if (Integer.parseInt(CustomNode.getAttribute(track.getChildNodes().item(i), "id")) == condiIndex) {
                     track.removeChild(track.getChildNodes().item(i));
                     i--;
                 }
@@ -172,14 +172,15 @@ class ProjectXML {
         }
     }
 
-    public static Map<Integer, Boolean> getTrackConditions(Node track){
+    public static Map<Integer, Boolean> getTrackConditions(Node track) {
         if (track.getChildNodes() == null)
             return new HashMap<>();
         Map<Integer, Boolean> listConditionIndex = new HashMap<>();
-        for (int i = 0; i < track.getChildNodes().getLength(); i++){
+        for (int i = 0; i < track.getChildNodes().getLength(); i++) {
             Node child = track.getChildNodes().item(i);
-            if (child.getNodeName().equals("Condition")){
-                listConditionIndex.put(Integer.parseInt(CustomNode.getAttribute(child, "id")), CustomNode.getAttribute(child, "status").equals("true"));
+            if (child.getNodeName().equals("Condition")) {
+                listConditionIndex.put(Integer.parseInt(CustomNode.getAttribute(child, "id")),
+                        CustomNode.getAttribute(child, "status").equals("true"));
             }
         }
         return listConditionIndex;
@@ -214,13 +215,14 @@ class ProjectXML {
 
     public static Node getConditionNode(ConditionInfo info) {
         return convertStringToDocument(
-                "      <Condition id=\"" + info.index + "\" guid=\"" + info.guid + "\" status=\"" + (info.status) + "\"/>")
+                "      <Condition id=\"" + info.index + "\" guid=\"" + info.guid + "\" status=\"" + (info.status)
+                        + "\"/>")
                 .getDocumentElement().cloneNode(true);
     }
 
     public static Node getCheckSkinTickNode(int trackIndex, String guid, int skinId, int type) {
-        String objId="", objName="";
-        switch (type){
+        String objId = "", objName = "";
+        switch (type) {
             case 0:
                 objId = "0";
                 objName = "self";
@@ -234,7 +236,8 @@ class ProjectXML {
                 + "\" eventType=\"CheckSkinIdTick\" guid=\"" + guid
                 + "\" enabled=\"true\" r=\"0.000\" g=\"0.000\" b=\"0.000\" stopAfterLastEvent=\"true\">"
                 + "\n  <Event eventName=\"CheckSkinIdTick\" time=\"0.000\" isDuration=\"false\">"
-                + "\n    <TemplateObject name=\"targetId\" id=\"" + objId + "\" objectName=\"" + objName + "\" isTemp=\"false\" refParamName=\"\" useRefParam=\"false\" />"
+                + "\n    <TemplateObject name=\"targetId\" id=\"" + objId + "\" objectName=\"" + objName
+                + "\" isTemp=\"false\" refParamName=\"\" useRefParam=\"false\" />"
                 + "\n    <int name=\"skinId\" value=\"" + skinId + "\" refParamName=\"\" useRefParam=\"false\" />"
                 + "\n    <bool name=\"bSkipLogicCheck\" value=\"true\" refParamName=\"\" useRefParam=\"false\" />"
                 + "\n  </Event>"
@@ -363,6 +366,50 @@ class ProjectXML {
         }
     }
 
+    public void modEffect(int idMod, boolean isAwakeSkin) {
+        setValue("String", new String[] { "resourceName", "resourceName2", "prefabName", "prefab" },
+                (StringOperator) (value) -> {
+                    if (!value.toLowerCase().contains("prefab_skill_effects/hero_skill_effects/"))
+                        return value;
+                    String[] split = value.split("/");
+                    String newValue;
+                    if (!isAwakeSkin) {
+                        newValue = String.join("/", Arrays.copyOfRange(split, 0, 3)) + "/" + idMod + "/"
+                                + split[split.length - 1];
+                    } else {
+                        newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod + "_5/"
+                                + split[split.length - 1];
+                    }
+                    return newValue;
+                });
+        setValue("bool", "bAllowEmptyEffect", "false");
+    }
+
+    public void modSound(int idMod){
+        modSound(idMod, -1, -1);
+    }
+
+    public void modSound(int idMod, int levelSFXUnlock, int levelVOXUnlock) {
+        List<Node> playSoundTick = getTrackNodeByType("PlayHeroSoundTick", true);
+        int skin = idMod % 100;
+        setValue("String", "eventName", "PlayHeroSoundTick", (value) -> {
+            if (value.toLowerCase().contains("_skin"))
+                return value;
+            if (levelSFXUnlock == -1 && levelVOXUnlock == -1) {
+                return value + "_Skin" + skin;
+            } else {
+                if (value.contains("_VO") || value.toLowerCase().contains("voice")) {
+                    return value + "_Skin" + skin + "_AW" + levelVOXUnlock;
+                } else {
+                    return value + "_Skin" + skin + "_AW" + levelSFXUnlock;
+                }
+            }
+        });
+        for (Node node : playSoundTick) {
+            appendActionChild(node);
+        }
+    }
+
     public String getXmlString() {
         return convertDocumentToString(doc);
     }
@@ -438,7 +485,7 @@ class ConditionInfo {
         this.status = status;
     }
 
-    public ConditionInfo changeStatus(boolean status){
+    public ConditionInfo changeStatus(boolean status) {
         return new ConditionInfo(index, guid, status);
     }
 }
@@ -757,6 +804,129 @@ class BulletElement {
     }
 }
 
+class ListMotionElement {
+    private byte[] bytes;
+    public List<MotionElement> motionElements;
+
+    public ListMotionElement(byte[] bytes) throws Exception {
+        this.bytes = bytes.clone();
+        motionElements = new ArrayList<>();
+        int start;
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S')
+            start = DHAExtension.bytesToInt(bytes, 132);
+        else
+            start = 0;
+        if (start == bytes.length)
+            return;
+        int count;
+        while (start < bytes.length) {
+            count = DHAExtension.bytesToInt(bytes, start) + 4;
+            MotionElement s = new MotionElement(Arrays.copyOfRange(bytes, start, start + count));
+            motionElements.add(s);
+            start += count;
+        }
+    }
+
+    public void showMotionCodes(int heroId){
+        showMotionCodes(heroId, 0);
+    }
+
+    public void showMotionCodes(int heroId, int space){
+        String s = "";
+        for (int i = 0; i < space; i++){
+            s+=" ";
+        }
+        for (MotionElement m : motionElements){
+            if (m.getHeroId() == heroId){
+                System.out.println(s + m.motionCodes);
+            }
+        }
+    }
+
+    public void copyMotion(int heroId, String baseMotionCode, String newMotionCode) throws Exception{
+        copyMotion(heroId, new String[]{baseMotionCode}, newMotionCode);
+    }
+
+    public void copyMotion(int heroId, String[] baseMotionCode, String newMotionCode) throws Exception{
+        List<Integer> baseIndexs=null;
+        int newIndex=-1;
+        for (int i = 0; i < motionElements.size(); i++){
+            if (motionElements.get(i).getHeroId() == heroId){
+                if (motionElements.get(i).motionCodes.contains(newMotionCode)){
+                    newIndex = i;
+                }else if (DHAExtension.listContainsElementFromOther(motionElements.get(i).motionCodes.toArray(new String[0]), baseMotionCode)){
+                    if (baseIndexs == null)
+                        baseIndexs = new ArrayList<>();
+                    baseIndexs.add(i);
+                }
+            }
+        }
+        if (baseIndexs != null && newIndex != -1){
+            for (int baseIndex : baseIndexs){
+                int oldIndex = motionElements.get(baseIndex).getIndex();
+                motionElements.set(baseIndex, new MotionElement(motionElements.get(newIndex).getBytes()));
+                motionElements.get(baseIndex).setIndex(oldIndex);
+            }
+        }else{
+            throw new Exception("not found code " + baseMotionCode + " or " + newMotionCode);
+        }
+    }
+
+    public byte[] getBytes() {
+        byte[] childBytes = new byte[0];
+        for (int i = 0; i < motionElements.size(); i++) {
+            // motionElements.get(i).setIndex(i+1);
+            childBytes = DHAExtension.mergeBytes(childBytes, motionElements.get(i).getBytes());
+        }
+        int start;
+        if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S') {
+            start = DHAExtension.bytesToInt(bytes, 132);
+            bytes = DHAExtension.replaceBytes(bytes, 12, 16, DHAExtension.toBytes(motionElements.size()));
+        } else
+            start = 0;
+        return DHAExtension.mergeBytes(Arrays.copyOfRange(bytes, 0, start), childBytes);
+    }
+}
+
+class MotionElement {
+    private byte[] bytes;
+    public List<String> motionCodes;
+
+    public MotionElement(byte[] bytes) throws Exception {
+        this.bytes = bytes.clone();
+        motionCodes = new ArrayList<>();
+
+        int index=9;
+        while (index < bytes.length-5) {
+            int length = DHAExtension.bytesToInt(bytes, index);
+            if (length == 0)
+                throw new Exception("Length error");
+            if (length == 1){
+                index += 5;
+                continue;
+            }
+            motionCodes.add(new String(Arrays.copyOfRange(bytes, index+4, index+length+3)));
+            index += length + 4;
+        }
+    }
+
+    public int getHeroId(){
+        return DHAExtension.bytesToInt(bytes, bytes.length-5);
+    }
+
+    public void setIndex(int index){
+        bytes = DHAExtension.replaceBytes(bytes, 4, 8, DHAExtension.toBytes(index));
+    }
+
+    public int getIndex(){
+        return DHAExtension.bytesToInt(bytes, 4);
+    }
+
+    public byte[] getBytes() {
+        return bytes;
+    }
+}
+
 class ListCharComponent {
     private byte[] bytes;
     public List<CharComponent> charComponents;
@@ -857,7 +1027,7 @@ class ListSoundElement {
         }
     }
 
-    public void copySound(int baseId, int targetId){
+    public void copySound(int baseId, int targetId) {
         copySound(baseId, targetId, true);
     }
 
@@ -865,7 +1035,7 @@ class ListSoundElement {
         List<SoundElement> targetSounds = new ArrayList<>();
         for (int i = 0; i < soundElements.size(); i++) {
             if (soundElements.get(i).skinId == baseId) {
-                if (removeOldSound){
+                if (removeOldSound) {
                     soundElements.remove(i);
                     i--;
                 }
@@ -973,7 +1143,7 @@ class ListLabelElement {
         }
     }
 
-    public void setLabel (int sourceId, byte[] labelBytes) throws Exception{
+    public void setLabel(int sourceId, byte[] labelBytes) throws Exception {
         if (!labelIndexMap.containsKey(sourceId)) {
             throw new Exception("not found label for id " + sourceId);
         }
@@ -1082,7 +1252,7 @@ class ListIconElement {
         }
     }
 
-    public void setIcon(int sourceId, byte[] iconBytes) throws Exception{
+    public void setIcon(int sourceId, byte[] iconBytes) throws Exception {
         if (!iconIndexDict.containsKey(sourceId)) {
             throw new Exception("not found id " + sourceId);
         }

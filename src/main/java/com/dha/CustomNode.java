@@ -8,6 +8,18 @@ import manifold.ext.rt.api.This;
 
 @Extension
 public class CustomNode {
+    public static boolean checkEventType(Node node, String name){
+        return checkEventType(node, new String[]{name});
+    } 
+    
+    public static boolean checkEventType(Node node, String[] names){
+        if (!node.getNodeName().equals("Track")){
+            return false;
+        }
+        Node type = node.getAttributes().getNamedItem("eventType");
+        return type != null && Arrays.asList(names).contains(type.getNodeValue());
+    }
+
     public static Node stringToNode(String str){
         return ProjectXML.convertStringToDocument(str).getDocumentElement();
     }
@@ -39,6 +51,37 @@ public class CustomNode {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public static void setEventDuration(Node node, float duration){
+        Node event = node;
+        if (event.getNodeName().equals("Track"))
+            event = getChild(node, "Event");
+        event.getAttributes().getNamedItem("length").setNodeValue(duration+"");
+        event.getAttributes().getNamedItem("isDuration").setNodeValue("true");
+    }
+
+    public static void setEventTime(Node node, float time){
+        Node event = node;
+        if (event.getNodeName().equals("Track"))
+            event = getChild(node, "Event");
+        event.getAttributes().getNamedItem("time").setNodeValue(time+"");
+    }
+
+    public static boolean setEventChildValue(Node node, String tagName, String childName, String newValue){
+        return setChildValue(getChild(node, "Event"), tagName, new String[]{childName}, newValue);
+    }
+
+    public static boolean setEventChildValue(Node node, String tagName, String childName, StringOperator newValue){
+        return setChildValue(getChild(node, "Event"), tagName, new String[]{childName}, newValue);
+    }
+
+    public static boolean setEventChildValue(Node node, String tagName, String[] childName, String newValue){
+        return setChildValue(getChild(node, "Event"), tagName, childName, newValue);
+    }
+
+    public static boolean setEventChildValue(Node node, String tagName, String[] childName, StringOperator newValue){
+        return setChildValue(getChild(node, "Event"), tagName, childName, newValue);
     }
 
     public static boolean setChildValue(Node node, String tagName, String childName, String newValue) {
