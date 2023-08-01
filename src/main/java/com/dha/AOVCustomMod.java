@@ -32,8 +32,6 @@ import com.google.gson.GsonBuilder;
 public class AOVCustomMod {
 
     public static void main(String[] args) throws Exception {
-        // findAllActionsResource("F:/This
-        // PC/Documents/AOV/CustomPack/custompack_150/files/Resources/1.50.1/Ages/Prefab_Characters/Prefab_Hero/150_HanXin/skill");
         // taopack();
 
         AOVModHelper helper = new AOVModHelper();
@@ -47,27 +45,30 @@ public class AOVCustomMod {
                 skinMap.put(skin.id, skin);
             }
         }
-        // helper.setModPackName("testpack");
+        helper.setModPackName("testpack");
         // DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
+        String[] baseSkin = "1961".split(" ");
+        String[] newSkin = "1966".split(" ");
         // String[] baseSkin = "1901 1902 1904 1906 1909".split(" ");
         // String[] newSkin = "1908 19010 1907 19013 19014".split(" ");
-        // List<ModInfo> modList = new ArrayList<>();
-        // for (int i = 0; i < baseSkin.length; i++){
-        //     modList.add(new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
-        //                 new Skin(baseSkin[i], SkinLabel.Default)
-        //         })), skinMap.get(newSkin[i]), turnOnAll));
-        // }
+        List<ModInfo> modList = new ArrayList<>();
+        for (int i = 0; i < baseSkin.length; i++){
+            modList.add(new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
+                        new Skin(baseSkin[i], SkinLabel.Default)
+                })), skinMap.get(newSkin[i]), turnOnAll));
+        }
+        helper.modBack(modList);
         // helper.modInfos(modList);
         // helper.modIcon(modList);
         // helper.modLabel(modList);
         // helper.modSound(modList);
         // helper.modActionsMulti(modList);
 
-        for (Hero hero : heroList){
-            ListMotionElement listMotion = new ListMotionElement(DHAExtension.ReadAllBytes("F:\\This PC\\Documents\\AOV\\Resources\\ResMotionShow.bytes.decompressed"));
-            System.out.println(hero.id + " - " + hero.name + ": ");
-            listMotion.showMotionCodes(Integer.parseInt(hero.id), 3);
-        }
+        // for (Hero hero : heroList){
+        //     ListMotionElement listMotion = new ListMotionElement(DHAExtension.ReadAllBytes("F:\\This PC\\Documents\\AOV\\Resources\\ResMotionShow.bytes.decompressed"));
+        //     System.out.println(hero.id + " - " + hero.name + ": ");
+        //     listMotion.showMotionCodes(Integer.parseInt(hero.id), 3);
+        // }
     }
 
     public static void prettierXML(String path) {

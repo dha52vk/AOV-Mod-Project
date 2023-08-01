@@ -76,6 +76,10 @@ public class CustomNode {
         return setChildValue(getChild(node, "Event"), tagName, new String[]{childName}, newValue);
     }
 
+    public static boolean setEventChildValue(Node node, String tagName, String childName, String changeAttr, StringOperator newValue){
+        return setChildValue(getChild(node, "Event"), tagName, new String[]{childName}, changeAttr, newValue);
+    }
+
     public static boolean setEventChildValue(Node node, String tagName, String[] childName, String newValue){
         return setChildValue(getChild(node, "Event"), tagName, childName, newValue);
     }
@@ -97,10 +101,15 @@ public class CustomNode {
     }
 
     public static boolean setChildValue(Node node, String tagName, String[] childName, StringOperator operator) {
+        return setChildValue(node, tagName, childName, "value", operator);
+    }
+
+    public static boolean setChildValue(Node node, String tagName, String[] childName, String changeAttr, StringOperator operator) {
         for (int i = 0; i < node.getChildNodes().getLength(); i++) {
             if (node.getChildNodes().item(i).getNodeName().equals(tagName)) {
                 if (Arrays.asList(childName).contains(node.getChildNodes().item(i).getAttributes().getNamedItem("name").getNodeValue())) {
-                    node.getChildNodes().item(i).getAttributes().getNamedItem("value").setNodeValue(operator.handle(node.getChildNodes().item(i).getAttributes().getNamedItem("value").getNodeValue()));
+                    Node attr = node.getChildNodes().item(i).getAttributes().getNamedItem(changeAttr);
+                    attr.setNodeValue(operator.handle(node.getChildNodes().item(i).getAttributes().getNamedItem("value").getNodeValue()));
                     return true;
                 }
             }

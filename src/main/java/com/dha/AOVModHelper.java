@@ -23,7 +23,7 @@ import org.w3c.dom.NodeList;
 import com.google.gson.Gson;
 
 public class AOVModHelper {
-    public static String heroListJsonPath = "D:/skinlist(label).json";
+    public static String heroListJsonPath = "D:/skinlist(label)(new).json";
     public static String ChannelName = "IzumiTv";
     public static String YoutubeLink = "https://www.youtube.com/@MiyamuraModAOV";
 
@@ -53,7 +53,7 @@ public class AOVModHelper {
     List<String> originSkinOrgan = Arrays.asList(new String[] { "1113", "1412", "1501", "5012" });
     List<String> trackTypeRemoveCheckSkinId = Arrays
             .asList(new String[] { "TriggerParticle", "TriggerParticleTick",
-                    "BattleUIAnimationDuration" });// "PlayAnimDuration", , "HitTriggerTick" });
+                    "BattleUIAnimationDuration", "HitTriggerTick" });// "PlayAnimDuration"  });
     List<String> skinIdAllowTrackCantRemove = Arrays.asList(new String[] { "1678" });
     Map<String, List<String>> skinIdAllowTrackCantRemoveMap = new HashMap<String, List<String>>(){
         {
@@ -66,7 +66,7 @@ public class AOVModHelper {
     public static List<String> idNotSwap = new ArrayList<>(Arrays.asList(new String[] {
             "19014", "11213", "13211", "50118", "16711", "19610", "13610", "11813", "5157", "5255",
             "1135", "1913", "5069", "5483", "1696", "1209", "5464", "16712", "10618", "11617", "11812", "50114", "1669",
-            "15213"
+            "15213", "15013", "1959", "15712", "52111", "5359"//, "1239", "13212", "1739", "51811", "5236"
     }));
 
     Map<Integer, Integer> skinSoundSpecial = new HashMap<Integer, Integer>() {
@@ -143,6 +143,23 @@ public class AOVModHelper {
             modSkillMark(modList);
             modSound(modList);
             modMotion(modList);
+
+            // copy extra battle skin
+            if (copyBattleFile) {
+                update("Copying battle files...");
+                String battlePath = saveModPath + modPackName +
+                        "/files/Extra/2019.V2/assetbundle/battle/skin/";
+                new File(battlePath).mkdirs();
+                for (ModInfo modInfo : modList) {
+                    FilenameFilter filter = (parent, filename) -> {
+                        return filename.startsWith(modInfo.newSkin.id + "_");
+                    };
+                    String[] battleFiles = new File(SkinBattlePath).list(filter);
+                    for (String fileName : battleFiles) {
+                        DHAExtension.copy(SkinBattlePath + fileName, battlePath + fileName);
+                    }
+                }
+            }
             List<ModInfo> modList2 = new ArrayList<>(modList);
             modList2.removeIf(modInfo -> !modInfo.modSettings.modBack || modInfo.newSkin.getSkinLevel() < 4);
             if (modList2.size() > 3) {
@@ -161,26 +178,9 @@ public class AOVModHelper {
                 highlightSkill(actionsPath, 4);
             }
 
-            // copy extra battle skin
-            if (copyBattleFile) {
-                update("Copying battle files...");
-                String battlePath = saveModPath + modPackName +
-                        "/files/Extra/2019.V2/assetbundle/battle/skin/";
-                new File(battlePath).mkdirs();
-                for (ModInfo modInfo : modList) {
-                    FilenameFilter filter = (parent, filename) -> {
-                        return filename.startsWith(modInfo.newSkin.id + "_");
-                    };
-                    String[] battleFiles = new File(SkinBattlePath).list(filter);
-                    for (String fileName : battleFiles) {
-                        DHAExtension.copy(SkinBattlePath + fileName, battlePath + fileName);
-                    }
-                }
-            }
-
             String content = "";
             for (ModInfo info : modList) {
-                content += "\n   + " + info.newSkin.name;
+                content += "\n   + " + DHAExtension.convertToTitleCase(info.newSkin.name);
             }
             DHAExtension.WriteAllText(saveModPath + modPackName + "/packinfo.txt",
                     content);
@@ -338,11 +338,12 @@ public class AOVModHelper {
                     Element newSkin = null;
                     for (int i = 0; i < element.getChild("SkinPrefab").getChildLength(); i++) {
                         Element skin = element.getChild("SkinPrefab").getChild(i);
-                        String code = skin.getChild(2).getChild(0).valueS;
+                        String code = skin.getChild("ArtSkinPrefabLOD").getChild(0).valueS;
                         if (code == null)
                             continue;
                         String[] split = code.split("/");
                         String id = split[split.length - 1].split("_")[0];
+                        // update(targetId + ": " + id + " - " + newId);
                         if (id.equals(newId)) {
                             newIndex = i;
                             newSkin = skin.clone();
@@ -1277,7 +1278,9 @@ public class AOVModHelper {
 
             ZipInputStream zis = new ZipInputStream(
                     new FileInputStream(InfosParentPath + "Actor_" + heroId + "_Infos.pkg.bytes"));
-            String heroCodeName = zis.getNextEntry().getName().split("/")[1];
+            ZipEntry entryGetName;
+            while ((entryGetName=zis.getNextEntry()).getName().split("/").length<2);
+            String heroCodeName = entryGetName.getName().split("/")[1];
             zis.close();
 
             String newCode, oldCode = "(?i)prefab_skill_effects/hero_skill_effects/" + heroCodeName;
@@ -1322,7 +1325,9 @@ public class AOVModHelper {
 
             ZipInputStream zis = new ZipInputStream(
                     new FileInputStream(InfosParentPath + "Actor_" + heroId + "_Infos.pkg.bytes"));
-            String heroCodeName = zis.getNextEntry().getName().split("/")[1];
+            ZipEntry entryGetName;
+            while ((entryGetName=zis.getNextEntry()).getName().split("/").length<2);
+            String heroCodeName = entryGetName.getName().split("/")[1];
             zis.close();
 
             String newCode, oldCode = "(?i)prefab_skill_effects/hero_skill_effects/" + heroCodeName;
@@ -1569,7 +1574,9 @@ public class AOVModHelper {
 
             ZipInputStream zis = new ZipInputStream(
                     new FileInputStream(InfosParentPath + "Actor_" + hero + "_Infos.pkg.bytes"));
-            String heroCodeName = zis.getNextEntry().getName().split("/")[1];
+            ZipEntry entryGetName;
+            while ((entryGetName=zis.getNextEntry()).getName().split("/").length<2);
+            String heroCodeName = entryGetName.getName().split("/")[1];
             zis.close();
 
             String skinId = modInfo.newSkin.id.substring(3, modInfo.newSkin.id.length());
@@ -1825,7 +1832,9 @@ public class AOVModHelper {
                 ZipInputStream zis = new ZipInputStream(
                         new FileInputStream(InfosParentPath + "Actor_" + hero +
                                 "_Infos.pkg.bytes"));
-                String heroCodeName = zis.getNextEntry().getName().split("/")[1];
+                ZipEntry entryGetName;
+            while ((entryGetName=zis.getNextEntry()).getName().split("/").length<2);
+            String heroCodeName = entryGetName.getName().split("/")[1];
                 zis.close();
 
                 String skinId = modInfo.newSkin.id.substring(3, modInfo.newSkin.id.length());
@@ -1989,7 +1998,7 @@ public class AOVModHelper {
                             CustomNode.setEventChildValue(track1, "String", "resourceName", (value)->{
                                 String[] split = value.split("/");
                                 String newValue;
-                                String endEffect = modInfo.newSkin.hasteNameRun;
+                                String endEffect = modInfo.newSkin.hasteNameRun != null ? modInfo.newSkin.hasteNameRun : modInfo.newSkin.hasteName;
                                 if (!modInfo.newSkin.isAwakeSkin) {
                                     newValue = "prefab_skill_effects/hero_skill_effects/" + heroCodeName + "/" +
                                             idMod + "/" + endEffect;

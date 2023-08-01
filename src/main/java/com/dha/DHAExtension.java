@@ -11,11 +11,29 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DHAExtension {
-    public static boolean listContainsElementFromOther(Object[] arr1, Object[] arr2){
-        for (int i = 0; i < arr1.length; i++){
-            for (int j = 0; j < arr2.length; j++){
+    public static String convertToTitleCase(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+
+        String WORD_SEPARATOR = " ";
+
+        return Arrays
+                .stream(text.split(WORD_SEPARATOR))
+                .map(word -> word.isEmpty()
+                        ? word
+                        : Character.toTitleCase(word.charAt(0)) + word
+                                .substring(1)
+                                .toLowerCase())
+                .collect(Collectors.joining(WORD_SEPARATOR));
+    }
+
+    public static boolean listContainsElementFromOther(Object[] arr1, Object[] arr2) {
+        for (int i = 0; i < arr1.length; i++) {
+            for (int j = 0; j < arr2.length; j++) {
                 if (arr1[i].equals(arr2[j]))
                     return true;
             }
@@ -23,46 +41,47 @@ public class DHAExtension {
         return false;
     }
 
-    public static int pow(int n1, int n2){
-        int l =1;
-        for (int i = 0; i<n2;i++){
-            l=l*n1;
+    public static int pow(int n1, int n2) {
+        int l = 1;
+        for (int i = 0; i < n2; i++) {
+            l = l * n1;
         }
         return l;
     }
 
-    public static byte[] replaceBytesLast(byte[] bytes, byte[] targetBytes, byte[] replaceBytes){
-        int start=0;
-        if ((start = indexOfBefore(bytes, targetBytes, bytes.length-1)) > 0){
-            bytes = replaceBytes(bytes, start, start+targetBytes.length, replaceBytes);
+    public static byte[] replaceBytesLast(byte[] bytes, byte[] targetBytes, byte[] replaceBytes) {
+        int start = 0;
+        if ((start = indexOfBefore(bytes, targetBytes, bytes.length - 1)) > 0) {
+            bytes = replaceBytes(bytes, start, start + targetBytes.length, replaceBytes);
         }
         return bytes;
     }
 
-    public static byte[] replaceBytesFirst(byte[] bytes, byte[] targetBytes, byte[] replaceBytes){
-        int start=0;
-        if ((start = indexOf(bytes, targetBytes)) > 0){
-            bytes = replaceBytes(bytes, start, start+targetBytes.length, replaceBytes);
+    public static byte[] replaceBytesFirst(byte[] bytes, byte[] targetBytes, byte[] replaceBytes) {
+        int start = 0;
+        if ((start = indexOf(bytes, targetBytes)) > 0) {
+            bytes = replaceBytes(bytes, start, start + targetBytes.length, replaceBytes);
         }
         return bytes;
     }
 
-    public static byte[] replaceBytes(byte[] bytes, byte[] targetBytes, byte[] replaceBytes){
-        if (targetBytes==replaceBytes)
+    public static byte[] replaceBytes(byte[] bytes, byte[] targetBytes, byte[] replaceBytes) {
+        if (targetBytes == replaceBytes)
             return bytes;
-        int start=0;
-        while ((start = indexOf(bytes, targetBytes, start)) > 0){
-            bytes = replaceBytes(bytes, start, start+targetBytes.length, replaceBytes);
+        int start = 0;
+        while ((start = indexOf(bytes, targetBytes, start)) > 0) {
+            bytes = replaceBytes(bytes, start, start + targetBytes.length, replaceBytes);
         }
         return bytes;
     }
 
-    public static byte[] replaceBytes(byte[] bytes, int start, int end, byte[] replaceBytes){
-        return mergeBytes(Arrays.copyOfRange(bytes, 0, start), replaceBytes, Arrays.copyOfRange(bytes, end, bytes.length));
+    public static byte[] replaceBytes(byte[] bytes, int start, int end, byte[] replaceBytes) {
+        return mergeBytes(Arrays.copyOfRange(bytes, 0, start), replaceBytes,
+                Arrays.copyOfRange(bytes, end, bytes.length));
     }
 
-    public static int bytesToInt(byte[] bytes, int index){
-        return bytesToInt(bytes[index], bytes[index+1], bytes[index+2], bytes[index+3]);
+    public static int bytesToInt(byte[] bytes, int index) {
+        return bytesToInt(bytes[index], bytes[index + 1], bytes[index + 2], bytes[index + 3]);
     }
 
     public static int bytesToInt(byte... bytes) {
@@ -84,10 +103,10 @@ public class DHAExtension {
         return (str.length() - str.replace(substr, "").length()) / substr.length();
     }
 
-    public static int countMatches(byte[] outerBytes, byte[] smallerBytes){
-        int count=0;
-        int start=-1;
-        while ((start=indexOf(outerBytes, smallerBytes, start+1)) > 0){
+    public static int countMatches(byte[] outerBytes, byte[] smallerBytes) {
+        int count = 0;
+        int start = -1;
+        while ((start = indexOf(outerBytes, smallerBytes, start + 1)) > 0) {
             count++;
         }
         return count;
@@ -170,27 +189,27 @@ public class DHAExtension {
         return -1;
     }
 
-    public static void copy(String source, String dest){        
-        File sourceFile = new File(source);   
+    public static void copy(String source, String dest) {
+        File sourceFile = new File(source);
         File destFile = new File(dest);
-        if (sourceFile.isFile()){
-            if (!destFile.isDirectory()){
+        if (sourceFile.isFile()) {
+            if (!destFile.isDirectory()) {
                 copyFile(source, dest);
             }
             return;
         }
-        if (destFile.isFile()){
+        if (destFile.isFile()) {
             return;
         }
 
         if (!destFile.exists())
             destFile.mkdirs();
-        for (String child : sourceFile.list()){
-            copy(new File(source,child).getAbsolutePath(), new File(dest,child).getAbsolutePath());
+        for (String child : sourceFile.list()) {
+            copy(new File(source, child).getAbsolutePath(), new File(dest, child).getAbsolutePath());
         }
     }
 
-    private static void copyFile(String source, String dest){
+    private static void copyFile(String source, String dest) {
         DHAExtension.WriteAllBytes(dest, DHAExtension.ReadAllBytes(source));
     }
 
@@ -234,7 +253,7 @@ public class DHAExtension {
 
     public static void WriteAllLines(String fileName, String[] lines) {
         try {
-            if (!new File(fileName).getParentFile().exists()){
+            if (!new File(fileName).getParentFile().exists()) {
                 new File(fileName).getParentFile().mkdirs();
             }
             StringBuilder content = new StringBuilder();
