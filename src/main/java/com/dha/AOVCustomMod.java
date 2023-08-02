@@ -57,18 +57,18 @@ public class AOVCustomMod {
                         new Skin(baseSkin[i], SkinLabel.Default)
                 })), skinMap.get(newSkin[i]), turnOnAll));
         }
-        helper.modBack(modList);
+        // helper.modBack(modList);
         // helper.modInfos(modList);
         // helper.modIcon(modList);
         // helper.modLabel(modList);
         // helper.modSound(modList);
         // helper.modActionsMulti(modList);
 
-        // for (Hero hero : heroList){
-        //     ListMotionElement listMotion = new ListMotionElement(DHAExtension.ReadAllBytes("F:\\This PC\\Documents\\AOV\\Resources\\ResMotionShow.bytes.decompressed"));
-        //     System.out.println(hero.id + " - " + hero.name + ": ");
-        //     listMotion.showMotionCodes(Integer.parseInt(hero.id), 3);
-        // }
+        for (Hero hero : heroList){
+            ListMotionElement listMotion = new ListMotionElement(DHAExtension.ReadAllBytes("F:\\This PC\\Documents\\AOV\\Resources\\ResMotionShow.bytes.decompressed"));
+            System.out.println(hero.id + " - " + hero.name + ": ");
+            listMotion.showMotionCodes(Integer.parseInt(hero.id), 3);
+        }
     }
 
     public static void prettierXML(String path) {

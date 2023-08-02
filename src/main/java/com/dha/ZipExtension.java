@@ -84,6 +84,17 @@ public class ZipExtension {
         }
     }
 
+    public static void zipDir(String dirPath, String zipoutPath, int compressLevel) {
+        if (!new File(zipoutPath).getParentFile().exists())
+            new File(zipoutPath).getParentFile().mkdirs();
+        try {
+            FileOutputStream fos = new FileOutputStream(zipoutPath);
+            zipDir(dirPath, fos, compressLevel);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void zipDir(String[] dirPaths, OutputStream fos) {
         try {
             ZipOutputStream zipOut = new ZipOutputStream(fos);
