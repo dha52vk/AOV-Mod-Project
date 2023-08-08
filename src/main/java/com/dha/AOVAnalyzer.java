@@ -1272,19 +1272,26 @@ class ListIconElement {
             throw new Exception("not found id " + sourceId + " or " + targetId);
         }
 
+        String oldHeroCode = iconElements.get(iconIndexDict.get(sourceId)).heronamecode;
         byte[] bytes = iconElements.get(iconIndexDict.get(targetId)).getBytes();
         iconElements.set(iconIndexDict.get(sourceId), new IconElement(bytes));
         iconElements.get(iconIndexDict.get(sourceId)).setIconIndex(sourceId % 100);
         iconElements.get(iconIndexDict.get(sourceId)).setHeroId(sourceId / 100);
         if (sourceId % 100 == 0) {
             if (swap) {
-                iconElements.get(iconIndexDict.get(targetId)).setHeroId(sourceId / 100);
+                // iconElements.get(iconIndexDict.get(targetId)).setHeroId(sourceId / 100);
                 iconElements.get(iconIndexDict.get(targetId)).setIconId(sourceId);
                 iconElements.get(iconIndexDict.get(targetId)).setIconIndex(targetId % 100);
                 iconElements.get(iconIndexDict.get(targetId)).setIconCode("30" + (sourceId / 100) + (sourceId % 100));
+                if (sourceId/100 != targetId/100){
+                    iconElements.get(iconIndexDict.get(targetId)).setHeroNameCode(oldHeroCode);
+                }
             } else {
                 iconElements.get(iconIndexDict.get(sourceId)).setIconId(sourceId);
                 iconElements.get(iconIndexDict.get(sourceId)).setIconCode("30" + (sourceId / 100) + (sourceId % 100));
+                if (sourceId/100 != targetId/100){
+                    iconElements.get(iconIndexDict.get(sourceId)).setHeroNameCode(iconElements.get(iconIndexDict.get(sourceId)).heronamecode);
+                }
             }
         } else {
             iconElements.get(iconIndexDict.get(sourceId)).setIconId(sourceId);
@@ -1333,6 +1340,10 @@ class IconElement {
         heronamecode = new String(Arrays.copyOfRange(bytes, 16, 35));
         skinnamecode = new String(Arrays.copyOfRange(bytes, 44, 63));
         iconCode = new String(Arrays.copyOfRange(bytes, 68, 67 + DHAExtension.bytesToInt(bytes, 64)));
+    }
+
+    public void setHeroNameCode(String code){
+        bytes = DHAExtension.replaceBytes(bytes, 16, 35, code.getBytes());
     }
 
     public void setIconId(int iconId) {

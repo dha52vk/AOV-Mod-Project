@@ -8,14 +8,16 @@ public class ModSettings {
     public boolean modSound;
     public boolean modBack;
     public boolean modHaste;
+    public boolean modMotion;
 
-    public ModSettings(boolean modIcon, boolean modInfo, boolean modOrgan, boolean modAction, boolean modSound, boolean modBack, boolean modHaste){
+    public ModSettings(boolean modIcon, boolean modInfo, boolean modOrgan, boolean modAction, boolean modSound, boolean modBack, boolean modHaste, boolean modMotion){
         this.modIcon = modIcon;
         this.modInfo = modInfo;
         this.modOrgan = modOrgan;
         this.modAction = modAction;
-        this. modSound = modSound;
+        this.modSound = modSound;
         this.modBack = modBack;
         this.modHaste = modHaste;
+        this.modMotion = modMotion;
     }
 }

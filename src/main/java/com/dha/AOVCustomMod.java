@@ -1,41 +1,25 @@
 package com.dha;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.sql.Date;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.zip.DataFormatException;
-import java.util.zip.Deflater;
-import java.util.zip.Inflater;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-
-import com.github.luben.zstd.Zstd;
-import com.github.luben.zstd.ZstdDecompressCtx;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+
+import java.awt.Desktop;
 
 public class AOVCustomMod {
+    static ModSettings turnOnAll = new ModSettings(true, true, true, true, true, true, true, true);
 
     public static void main(String[] args) throws Exception {
         // taopack();
+        // showSkinListHasLv(SkinLabel.SS.skinLevel);
 
         AOVModHelper helper = new AOVModHelper();
-        ModSettings turnOnAll = new ModSettings(true, true, true, true, true, true, true);
         helper.setEcho(true);
         Map<String, Skin> skinMap = new HashMap<>();
         List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
@@ -46,29 +30,91 @@ public class AOVCustomMod {
             }
         }
         helper.setModPackName("testpack");
-        // DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
-        String[] baseSkin = "1961".split(" ");
-        String[] newSkin = "1966".split(" ");
-        // String[] baseSkin = "1901 1902 1904 1906 1909".split(" ");
-        // String[] newSkin = "1908 19010 1907 19013 19014".split(" ");
+        DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
+        String[] baseSkins = "1901 1902 1904 1906 1909".split(" ");
+        String[] newSkins = "1908 19010 1907 19013 19014".split(" ");
         List<ModInfo> modList = new ArrayList<>();
-        for (int i = 0; i < baseSkin.length; i++){
+        for (int i = 0; i < baseSkins.length; i++){
             modList.add(new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
-                        new Skin(baseSkin[i], SkinLabel.Default)
-                })), skinMap.get(newSkin[i]), turnOnAll));
+                        new Skin(baseSkins[i], SkinLabel.Default)
+                })), skinMap.get(newSkins[i]), turnOnAll));
         }
-        // helper.modBack(modList);
-        // helper.modInfos(modList);
-        // helper.modIcon(modList);
-        // helper.modLabel(modList);
-        // helper.modSound(modList);
-        // helper.modActionsMulti(modList);
+        helper.modIcon(modList);
+        helper.modLabel(modList);
+        helper.modSound(modList);
+        helper.modInfos(modList);
+        helper.modActionsMulti(modList);
+        helper.modBackMulti(modList);
+        helper.modHasteMulti(modList);
+    }
 
-        for (Hero hero : heroList){
-            ListMotionElement listMotion = new ListMotionElement(DHAExtension.ReadAllBytes("F:\\This PC\\Documents\\AOV\\Resources\\ResMotionShow.bytes.decompressed"));
-            System.out.println(hero.id + " - " + hero.name + ": ");
-            listMotion.showMotionCodes(Integer.parseInt(hero.id), 3);
+    public static void CustomMod(String baseSkin, String newSkin) throws Exception{
+        System.out.println("Finding all resource nane...");
+        DHAExtension.WriteAllText("D:/allresources.txt", getAllResourcesForSkin(newSkin.split(""), false));
+        Desktop desktop = Desktop.getDesktop();
+        desktop.open(new File("D:/allresources.txt"));
+
+        AOVModHelper helper = new AOVModHelper();
+        helper.setEcho(true);
+        Map<String, Skin> skinMap = new HashMap<>();
+        List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
+                HeroList.class).heros;
+        for (Hero hero : heroList) {
+            for (Skin skin : hero.skins) {
+                skinMap.put(skin.id, skin);
+            }
         }
+        helper.setModPackName("testpack");
+        DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
+        List<ModInfo> modList = new ArrayList<>();
+        modList.add(new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
+                    new Skin(baseSkin, SkinLabel.Default)
+            })), skinMap.get(newSkin.split(" ")[0]), turnOnAll));
+        helper.modInfosCustom(modList);
+        helper.modIcon(modList);
+        helper.modLabel(modList);
+        helper.modSound(modList);
+        helper.modBack(modList);
+        helper.modHaste(modList);
+        helper.modActionsCustom(modList);
+        DHAExtension.deleteDir("D:/allresources.txt");
+    }
+
+    public static String getAllResourcesForSkin(String[] idList){
+        return getAllResourcesForSkin(idList, true);
+    }
+
+    public static String getAllResourcesForSkin(String[] idList, boolean showFileName){
+        StringBuilder content = new StringBuilder();
+        AOVModHelper helper = new AOVModHelper();
+        helper.setEcho(false);
+        Map<String, Skin> skinMap = new HashMap<>();
+        List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
+                HeroList.class).heros;
+        for (Hero hero : heroList) {
+            for (Skin skin : hero.skins) {
+                skinMap.put(skin.id, skin);
+            }
+        }
+        helper.setModPackName("cachepack");
+        DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
+        for (String id : idList){
+            try {
+                helper.modActions(Arrays.asList(new ModInfo[]{
+                    new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
+                                new Skin(id.substring(0, 3)+"1", SkinLabel.Default)
+                                })), skinMap.get(id), turnOnAll)
+                }));
+                String path = AOVModHelper.cacheModPath;
+                path = path + "/" + new File(path).list()[0];
+                path = path + "/" + new File(path).list()[0];
+                content.append("\n\n" + id + ": " + findAllActionsResource(path, showFileName));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
+        return content.toString();
     }
 
     public static void prettierXML(String path) {
@@ -88,6 +134,18 @@ public class AOVCustomMod {
         }
     }
 
+    public static void showSkinListHasLv(int skinLevel) {
+        List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
+                HeroList.class).heros;
+        for (Hero hero : heroList) {
+            for (Skin skin : hero.skins){
+                if (skin.getSkinLevel() == skinLevel){
+                    System.out.println(hero.name + " - " + skin+"");
+                }
+            }
+        }
+    }
+
     public static void saveHeroListTo(String path) {
         List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
                 HeroList.class).heros;
@@ -99,19 +157,29 @@ public class AOVCustomMod {
 
     }
 
-    public static void findAllActionsResource(String path) {
-        List<String> listEffectName = new ArrayList<>();
-        List<String> listClipName = new ArrayList<>();
-        List<String> listSoundName = new ArrayList<>();
+    public static String findAllActionsResource(String path) {
+        return findAllActionsResource(path, true);
+    }
+
+    public static String findAllActionsResource(String path, boolean showFileName) {
+        StringBuilder content = new StringBuilder("");
         for (String child : new File(path).list()) {
-            String childPath = path + child;
-            String lines[] = DHAExtension.ReadAllLines(childPath);
+            String childPath = (path.endsWith("/") ? path : path+"/") + child;
+            String content2 = "";
+            byte[] bytes = DHAExtension.ReadAllBytes(childPath);
+            byte[] decompress = AOVAnalyzer.AOVDecompress(bytes);
+            if (decompress == null){
+                content2 = new String(bytes);
+            }else{
+                content2 = new String(decompress);
+            }
+            String lines[] = content2.split("\\r?\\n|\\r");
             for (int i = 0; i < lines.length; i++) {
                 if (lines[i].contains("resourceName")) {
                     String[] split = lines[i].split("\"");
                     for (int j = 0; j < split.length; j++) {
                         if (split[j].endsWith("value=")) {
-                            listEffectName.add(child + ": " + split[j + 1]);
+                            content.append("\n" + (showFileName ? child + ": " : "") + split[j + 1]);
                             break;
                         }
                     }
@@ -119,48 +187,24 @@ public class AOVCustomMod {
                     String[] split = lines[i].split("\"");
                     for (int j = 0; j < split.length; j++) {
                         if (split[j].endsWith("value=")) {
-                            listClipName.add(child + ": " + split[j + 1]);
+                            content.append("\n" + (showFileName ? child + ": " : "") + split[j + 1]);
                             break;
                         }
                     }
-                } else if (lines[i].contains("<Track trackName=\"PlayHeroSoundTick")) {
+                } else if (lines[i].contains("trackName=\"PlayHeroSoundTick")) {
                     while (!lines[i].contains("\"eventName\""))
                         i++;
                     String[] split = lines[i].split("\"");
                     for (int j = 0; j < split.length; j++) {
                         if (split[j].endsWith("value=")) {
-                            listSoundName.add(child + ": " + split[j + 1]);
+                            content.append("\n" + (showFileName ? child + ": " : "") + split[j + 1]);
                             break;
                         }
                     }
                 }
             }
         }
-        DHAExtension.WriteAllLines("D:/listeffect.txt", listEffectName.toArray(new String[0]));
-        DHAExtension.WriteAllLines("D:/listsound.txt", listSoundName.toArray(new String[0]));
-        DHAExtension.WriteAllLines("D:/listclip.txt", listClipName.toArray(new String[0]));
-    }
-
-    public static void ModMulti(String[] originIds, String[] targetIds, boolean[] haveSounds, boolean[] changeAnims) {
-        DHAExtension.deleteDir("F:\\This PC\\Documents\\AOV\\multipack_" + originIds[0].substring(0, 3));
-        App.modPackName = "multipack_" + originIds[0].substring(0, 3);
-        for (int i = 0; i < originIds.length; i++) {
-            AOVExtension.ModInfoAdvanced(originIds[i], targetIds[i]);
-            AOVExtension.ModSound(originIds[i], targetIds[i]);
-            AOVExtension.ModIcon_Name(originIds[i], targetIds[i]);
-            AOVExtension.ModLabel(originIds[i], targetIds[i]);
-        }
-        AOVExtension.ModActionMulti(originIds, targetIds, haveSounds, changeAnims);
-        AOVExtension.ModBackMulti(originIds, targetIds);
-        AOVExtension.ModHasteMulti(originIds, targetIds, null, null);
-        AOVExtension.ModAssetRef(targetIds[0]);
-        AOVExtension.MakeCredit(new String[] { "1901" },
-                new String[] { "<color=#0096FF>[Thử nghiệm]Mod Skin</color> bởi <color=#C41E3A>AH MOD AOV</color>"
-                        + "\\n<color=#E4D00A>Mặc định</color> <color=#CF9FFF>=></color> <color=#00FF00>Long thần soái</color>"
-                        + "\\n<color=#E4D00A>Cung thủ bóng đêm</color> <color=#CF9FFF>=></color> <color=#00FF00>Vệ Binh Ngân Hà</color>"
-                        + "\\n<color=#E4D00A>Thần thoại hy lạp</color> <color=#CF9FFF>=></color> <color=#00FF00>Thế tử nguyệt tộc</color>"
-                        + "\\n<color=#E4D00A>Lục nguyệt cung</color> <color=#CF9FFF>=></color> <color=#00FF00>Long thần soái</color>"
-                        + "\\n<color=#E4D00A>Tiệc bãi biển</color> <color=#CF9FFF>=></color> <color=#00FF00>Vệ Binh Ngân Hà</color>" });
+        return content.toString();
     }
 
     public static void taopack() {
@@ -211,10 +255,10 @@ public class AOVCustomMod {
             byte[] bytes = DHAExtension.ReadAllBytes(path);
             if (bytes != new byte[0]) {
                 if (DHAExtension.indexOf(bytes, new byte[] { 40, (byte) 181, 47, (byte) 253 }) > 0) {
-                    DHAExtension.WriteAllBytes(path, AOVExtension.AOVDecompress(bytes));
+                    DHAExtension.WriteAllBytes(path, AOVAnalyzer.AOVDecompress(bytes));
                     // System.out.println("Giai ma " + path);
                 } else {
-                    DHAExtension.WriteAllBytes(path, AOVExtension.AOVCompress(bytes));
+                    DHAExtension.WriteAllBytes(path, AOVAnalyzer.AOVCompress(bytes));
                     System.out.println("Ma hoa " + path);
                 }
             }

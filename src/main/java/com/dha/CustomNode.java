@@ -32,6 +32,9 @@ public class CustomNode {
         }
         return null;
     }
+    public static String getEventChildValue(Node node, String tagName, String childName) {
+        return getChildValue(getChild(node, "Event"), tagName, childName);
+    }
 
     public static String getChildValue(Node node, String tagName, String childName) {
         for (int i = 0; i < node.getChildNodes().getLength(); i++) {
@@ -115,6 +118,12 @@ public class CustomNode {
             }
         }
         return false;
+    }
+
+    public static void appendEventNode(Node parent, Node newChild) {
+        parent = getChild(parent, "Event");
+        newChild = parent.getOwnerDocument().importNode(newChild, true);
+        parent.appendChild(newChild);
     }
 
     public static void appendNode(Node parent, Node newChild) {
@@ -202,6 +211,10 @@ public class CustomNode {
                 }
             }
         }
+    }
+
+    public static Node newNode(String nodeString){
+        return ProjectXML.convertStringToDocument(nodeString).getDocumentElement();
     }
 
     public static Node newNode(String tagName, Attribute[] attributes) {

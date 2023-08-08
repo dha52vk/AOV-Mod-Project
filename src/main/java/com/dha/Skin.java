@@ -12,9 +12,8 @@ public class Skin {
     public String hasteName;
     public String hasteNameRun;
     public String hasteNameEnd;
-    public String[] specialChangeOld;
-    public String[] specialChangeNew;
-    public String[] filenameNotMod;    
+    public String[] filenameNotMod;
+    public String[] filenameNotModCheckId;
 
     public Skin(){}
 
@@ -30,6 +29,7 @@ public class Skin {
             case "5213":
                 return SkinLabel.S_Plus.skinLevel;
             case "1118":
+            case "19010":
                 return SkinLabel.SS.skinLevel;
             default:
                 return label.skinLevel;
