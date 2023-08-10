@@ -50,7 +50,6 @@ public class AOVModHelper {
     // "ArtSkinLobbyIdleShowLOD", "ArtSkinLobbyShowCamera", "useNewMecanim",
     // "LobbyScale", "ArtSkinLobbyNode"
     // };
-    List<String> skinNotSupportMod = Arrays.asList(new String[] {});
     List<String> skinHasOrgan = Arrays.asList(new String[] { "1118", "14112", "15010", "5019" });
     List<String> originSkinOrgan = Arrays.asList(new String[] { "1113", "1412", "1501", "5012" });
     // List<String> trackTypeRemoveCheckSkinId = Arrays
@@ -686,10 +685,6 @@ public class AOVModHelper {
             // if (!modInfo.modSettings.modAction || modInfo.newSkin.getSkinLevel() < 2) {
             // continue;
             // }
-            if (skinNotSupportMod.contains(modInfo.newSkin.id)) {
-                update("   + Skin not support mod: " + modInfo.newSkin);
-                continue;
-            }
             update("    + Modding actions " + (l + 1) + "/" + modList.size() + ": " + modInfo.newSkin);
 
             String id = modInfo.newSkin.id;
@@ -723,6 +718,13 @@ public class AOVModHelper {
                     continue;
                 }
                 inputPath = cacheModPath + filemodName + filename;
+                if (new File(SpecialPath + "actions/"+id).exists()){
+                    String filePath = SpecialPath + "actions/" + id + "/" + filename;
+                    if (new File(filePath).exists())
+                        DHAExtension.WriteAllBytes(inputPath, AOVAnalyzer.AOVCompress(DHAExtension.ReadAllBytes(filePath)));
+                    update("      *Special mod file " + filename);
+                    continue;
+                }
                 outputBytes = AOVAnalyzer.AOVDecompress(DHAExtension.ReadAllBytes(inputPath));
                 if (outputBytes == null)
                     continue;
@@ -969,10 +971,6 @@ public class AOVModHelper {
             // if (!modInfo.modSettings.modAction || modInfo.newSkin.getSkinLevel() < 2) {
             // continue;
             // }
-            if (skinNotSupportMod.contains(modInfo.newSkin.id)) {
-                update("   + Skin not support mod: " + modInfo.newSkin);
-                continue;
-            }
             update("    + Modding actions " + (l + 1) + "/" + modList.size() + ": " + modInfo.newSkin);
 
             String id = modInfo.newSkin.id;

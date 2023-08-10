@@ -17,7 +17,7 @@ public class AOVCustomMod {
 
     public static void main(String[] args) throws Exception {
         // taopack();
-        // showSkinListHasLv(SkinLabel.SS.skinLevel);
+        showSkinListHasLv(SkinLabel.SSS_HH.skinLevel);
 
         AOVModHelper helper = new AOVModHelper();
         helper.setEcho(true);
@@ -39,13 +39,13 @@ public class AOVCustomMod {
                         new Skin(baseSkins[i], SkinLabel.Default)
                 })), skinMap.get(newSkins[i]), turnOnAll));
         }
-        helper.modIcon(modList);
-        helper.modLabel(modList);
-        helper.modSound(modList);
-        helper.modInfos(modList);
-        helper.modActionsMulti(modList);
-        helper.modBackMulti(modList);
-        helper.modHasteMulti(modList);
+        // helper.modIcon(modList);
+        // helper.modLabel(modList);
+        // helper.modSound(modList);
+        // helper.modInfos(modList);
+        // helper.modActionsMulti(modList);
+        // helper.modBackMulti(modList);
+        // helper.modHasteMulti(modList);
     }
 
     public static void CustomMod(String baseSkin, String newSkin) throws Exception{
