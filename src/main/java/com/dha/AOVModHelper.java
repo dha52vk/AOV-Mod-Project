@@ -1072,8 +1072,8 @@ public class AOVModHelper {
                 assetRef.addChild(0, creditElement);
             }
             assetRef = assetRef.replaceValue(AnalyzerType.string, (value) -> {
-                if (newValueMap.containsKey(value.toLowerCase())) {
-                    return newValueMap.get(value.toLowerCase());
+                if (newValueMap.containsKey(value.toLowerCase().substring(1))) {
+                    return "V" + newValueMap.get(value.toLowerCase().substring(1));
                 } else {
                     return value;
                 }

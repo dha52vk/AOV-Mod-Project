@@ -17,28 +17,48 @@ public class AOVCustomMod {
 
     public static void main(String[] args) throws Exception {
         // taopack();
-        showSkinListHasLv(SkinLabel.SSS_HH.skinLevel);
+        // showSkinListHasLv(SkinLabel.SSS_HH.skinLevel);
 
-        AOVModHelper helper = new AOVModHelper();
-        helper.setEcho(true);
-        Map<String, Skin> skinMap = new HashMap<>();
-        List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
-                HeroList.class).heros;
-        for (Hero hero : heroList) {
-            for (Skin skin : hero.skins) {
-                skinMap.put(skin.id, skin);
-            }
-        }
-        helper.setModPackName("testpack");
-        DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
-        String[] baseSkins = "1901 1902 1904 1906 1909".split(" ");
-        String[] newSkins = "1908 19010 1907 19013 19014".split(" ");
-        List<ModInfo> modList = new ArrayList<>();
-        for (int i = 0; i < baseSkins.length; i++){
-            modList.add(new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
-                        new Skin(baseSkins[i], SkinLabel.Default)
-                })), skinMap.get(newSkins[i]), turnOnAll));
-        }
+        Element assetRef = new Element(AOVAnalyzer.AOVDecompress(DHAExtension.ReadAllBytes("D:/194_AssetRef.bytes")));
+        Element baseSubset = assetRef.getChild("baseSubset");
+        Element particleLayer1 = baseSubset.getChild("particlesInFirstLayer");
+        Element child = particleLayer1.getChild(1).clone();
+        child.getChild(0).setValue("Vprefab_skill_effects/hero_skill_effects/537_Trip/53702/Trip_attack_spell03_2_cutin");;
+        particleLayer1.addChild(child);
+        // String[] lines = DHAExtension.ReadAllLines("D:/wirovtmod.txt");
+        // for (String line : lines){
+        //     if (line.contains("Nhap resources ")){
+        //         String[] split = line.replaceAll("Nhap resources moi cho ", "").split(": ");
+        //         if (split.length < 3)
+        //             continue;
+        //         System.out.println("'" + split[1] + "' -> '" + split[2] + "'");
+        //         assetRef = assetRef.replaceValue(AnalyzerType.string, "(?i)" + split[1], split[2]);
+        //     }
+        // }
+        DHAExtension.WriteAllBytes("D:/194_AssetRef.bytes.decompressed", assetRef.getBytes());
+
+        // CustomMod("1941", "15010 5373");
+        
+        // AOVModHelper helper = new AOVModHelper();
+        // helper.setEcho(true);
+        // Map<String, Skin> skinMap = new HashMap<>();
+        // List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
+        //         HeroList.class).heros;
+        // for (Hero hero : heroList) {
+        //     for (Skin skin : hero.skins) {
+        //         skinMap.put(skin.id, skin);
+        //     }
+        // }
+        // helper.setModPackName("testpack");
+        // DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
+        // String[] baseSkins = "1901 1902 1904 1906 1909".split(" ");
+        // String[] newSkins = "1908 19010 1907 19013 19014".split(" ");
+        // List<ModInfo> modList = new ArrayList<>();
+        // for (int i = 0; i < baseSkins.length; i++){
+        //     modList.add(new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
+        //                 new Skin(baseSkins[i], SkinLabel.Default)
+        //         })), skinMap.get(newSkins[i]), turnOnAll));
+        // }
         // helper.modIcon(modList);
         // helper.modLabel(modList);
         // helper.modSound(modList);
@@ -50,7 +70,7 @@ public class AOVCustomMod {
 
     public static void CustomMod(String baseSkin, String newSkin) throws Exception{
         System.out.println("Finding all resource nane...");
-        DHAExtension.WriteAllText("D:/allresources.txt", getAllResourcesForSkin(newSkin.split(""), false));
+        DHAExtension.WriteAllText("D:/allresources.txt", getAllResourcesForSkin(newSkin.split(" "), false));
         Desktop desktop = Desktop.getDesktop();
         desktop.open(new File("D:/allresources.txt"));
 
@@ -64,7 +84,7 @@ public class AOVCustomMod {
                 skinMap.put(skin.id, skin);
             }
         }
-        helper.setModPackName("testpack");
+        helper.setModPackName("multipack"+baseSkin + " - " + newSkin);
         DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
         List<ModInfo> modList = new ArrayList<>();
         modList.add(new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
