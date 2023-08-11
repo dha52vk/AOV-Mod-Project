@@ -8,6 +8,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 import com.google.gson.Gson;
 
 import java.awt.Desktop;
@@ -19,23 +24,42 @@ public class AOVCustomMod {
         // taopack();
         // showSkinListHasLv(SkinLabel.SSS_HH.skinLevel);
 
-        Element assetRef = new Element(AOVAnalyzer.AOVDecompress(DHAExtension.ReadAllBytes("D:/194_AssetRef.bytes")));
-        Element baseSubset = assetRef.getChild("baseSubset");
-        Element particleLayer1 = baseSubset.getChild("particlesInFirstLayer");
-        Element child = particleLayer1.getChild(1).clone();
-        child.getChild(0).setValue("Vprefab_skill_effects/hero_skill_effects/537_Trip/53702/Trip_attack_spell03_2_cutin");;
-        particleLayer1.addChild(child);
-        // String[] lines = DHAExtension.ReadAllLines("D:/wirovtmod.txt");
-        // for (String line : lines){
-        //     if (line.contains("Nhap resources ")){
-        //         String[] split = line.replaceAll("Nhap resources moi cho ", "").split(": ");
-        //         if (split.length < 3)
-        //             continue;
-        //         System.out.println("'" + split[1] + "' -> '" + split[2] + "'");
-        //         assetRef = assetRef.replaceValue(AnalyzerType.string, "(?i)" + split[1], split[2]);
-        //     }
-        // }
-        DHAExtension.WriteAllBytes("D:/194_AssetRef.bytes.decompressed", assetRef.getBytes());
+        String parentPath = "F:\\This PC\\Documents\\AOV\\New folder\\wirovethanskill\\";
+        Map<String, Node> trackMap = new HashMap<String, Node>();
+        Document doc = ProjectXML.convertStringToDocument(DHAExtension.ReadAllText("D:/defaultTrack.txt"));
+        for (String childName : new File(parentPath).list()){
+            String childPath = parentPath + childName;
+            try {
+                ProjectXML xml = new ProjectXML(DHAExtension.ReadAllText(childPath));
+                NodeList trackList = xml.getNodeListByTagName("Track");
+                for (int i = 0; i < trackList.getLength(); i++){
+                    String eventType = CustomNode.getAttribute(trackList.item(i), "eventType");
+                    Node node = null;
+                    if (trackMap.containsKey(eventType)){
+                        node = trackMap.get(eventType);
+                        Node event = CustomNode.getChild(trackList.item(i), "Event");
+                        for (int j = 0; j < event.getChildNodes().getLength(); j++){
+                            Node child = event.getChildNodes().item(j).cloneNode(true);
+                            if (CustomNode.getEventChildValue(node, child.getNodeName(), CustomNode.getAttribute(child, "name"))==null){
+                                child = node.getOwnerDocument().importNode(child, true);
+                                node.appendChild(child);
+                            }
+                        }
+                    }else{
+                        node = trackList.item(i);
+                        trackMap.put(eventType, node.cloneNode(true));
+                    }
+                }
+            } catch (Exception e) {
+                
+            }
+        }
+        List<String> keys = new ArrayList<>(trackMap.keySet());
+        for (String key : keys){
+            Node node = doc.importNode(trackMap.get(key), true);
+            doc.getElementsByTagName("Action").item(0).appendChild(node);
+        }
+        DHAExtension.WriteAllText("D:/defaultTrack.txt", ProjectXML.convertDocumentToString(doc));
 
         // CustomMod("1941", "15010 5373");
         

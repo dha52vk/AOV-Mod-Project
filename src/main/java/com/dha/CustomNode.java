@@ -1,6 +1,8 @@
 package com.dha;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.w3c.dom.Node;
 import manifold.ext.rt.api.Extension;
@@ -8,6 +10,16 @@ import manifold.ext.rt.api.This;
 
 @Extension
 public class CustomNode {
+    public static Node[] getParameterOfEventType(String eventType){
+        List<Node> parameterList = new ArrayList<>();
+        switch (eventType.toLowerCase()){
+            default: 
+                return null;
+        }
+        // return parameterList.toArray(new Node[0]);
+    }
+
+
     public static boolean checkEventType(Node node, String name){
         return checkEventType(node, new String[]{name});
     } 
