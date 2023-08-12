@@ -734,6 +734,18 @@ public class AOVModHelper {
                 if (modInfo.newSkin.filenameNotMod == null
                         || !Arrays.asList(modInfo.newSkin.filenameNotMod).stream()
                                 .anyMatch(name -> name.toLowerCase().equals(filename.toLowerCase()))) {
+                    // NodeList stringList = xml.getNodeListByTagName("String");
+                    // for (int i = 0; i < stringList.getLength(); i++){
+                    //     if (CustomNode.getAttribute(stringList.item(i), "value").toLowerCase().contains("prefab_skill_effects/hero_skill_effects/")){
+                    //         Node parent = stringList.item(i).getParentNode();
+                    //         String[] nodeString = new String[]{};
+                    //         for (String s : nodeString){
+                    //             Node newChild = CustomNode.newNode(s);
+                    //             newChild = parent.getOwnerDocument().importNode(newChild, true);
+                    //             parent.appendChild(newChild);
+                    //         }
+                    //     }
+                    // }
                     xml.setValue("String", new String[] { "resourceName", "resourceName2", "prefabName", "prefab" },
                             (StringOperator) (value) -> {
                                 if (!value.toLowerCase().contains("prefab_skill_effects/hero_skill_effects/"))
@@ -1157,7 +1169,8 @@ public class AOVModHelper {
             List<Node> soundTracks = new ArrayList<>();
             List<Node> animTracks = new ArrayList<>();
 
-            for (int index : effectTrackIndexs) {
+            for (int k = 0; k < effectTrackIndexs.size(); k++) {
+                int index = effectTrackIndexs.get(k);
                 Node track = tracks.item(index).cloneNode(true);
                 boolean hasCheckId = false;
                 for (int i = 0; i < track.getChildNodes().getLength(); i++) {
@@ -1177,9 +1190,13 @@ public class AOVModHelper {
                     effectTracks.add(track);
                     // CustomNode.clearEvent(tracks.item(index));
                     tracks.item(index).getAttributes().getNamedItem("enabled").setNodeValue("false");
+                }else{
+                    effectTrackIndexs.remove(k);
+                    k--;
                 }
             }
-            for (int index : soundTrackIndexs) {
+            for (int k = 0; k < soundTrackIndexs.size(); k++) {
+                int index = soundTrackIndexs.get(k);
                 Node track = tracks.item(index).cloneNode(true);
                 boolean hasCheckId = false;
                 for (int i = 0; i < track.getChildNodes().getLength(); i++) {
@@ -1199,6 +1216,9 @@ public class AOVModHelper {
                     soundTracks.add(tracks.item(index).cloneNode(true));
                     // CustomNode.clearEvent(tracks.item(index));
                     tracks.item(index).getAttributes().getNamedItem("enabled").setNodeValue("false");
+                }else{
+                    soundTrackIndexs.remove(k);
+                    k--;
                 }
             }
             if (modList.stream().filter((modInfo) -> modInfo.newSkin.changeAnim) != null) {
@@ -1213,7 +1233,7 @@ public class AOVModHelper {
                             if (CustomNode.getAttribute(checkTrack, "eventType").equals("CheckSkinIdTick")) {
                                 Node event = CustomNode.getChild(checkTrack, "Event");
                                 String idStr = CustomNode.getChildValue(event, "int", "skinId");
-                                if (CustomNode.getChildValue(event, "bool", "bEqual") != null) {
+                                if (idStr != null && CustomNode.getChildValue(event, "bool", "bEqual") != null) {
                                     hasCheckId = true;
                                 }
                             }
@@ -1314,6 +1334,8 @@ public class AOVModHelper {
                     xml.appendActionChild(checkSkinIdTick);
                     for (Node node : baseTrack) {
                         Node track = node.cloneNode(true);
+                        if (trackTypeNotRemoveCheckSkinId.contains(CustomNode.getAttribute(track, "eventType")))
+                            continue;
                         int oldIndex = -1, newIndex = xml.getNodeListByTagName("Track").getLength();
                         for (int i = 0; i < tracks.getLength(); i++) {
                             if (CustomNode.getAttribute(track, "guid")
@@ -1369,6 +1391,24 @@ public class AOVModHelper {
                         }
                         xml.appendActionChild(track);
                     }
+                    // NodeList conditionList2 = xml.getNodeListByTagName("Condition");
+                    // for (int i = 0; i < conditionList2.getLength(); i++){
+                    //     if (newTrackIndex.containsKey(Integer.parseInt(CustomNode.getAttribute(conditionList2.item(i), "id")))){
+                    //         update(CustomNode.getAttribute(conditionList2.item(i).getParentNode(), "eventType"));
+                    //     }
+                    // }
+                    List<Node> stopTrackList = xml.getTrackNodeByType("StopTrack");
+                    for (int i = 0; i < stopTrackList.size(); i++){
+                        Node stopTrack = stopTrackList.get(i).cloneNode(true);
+                        if (DHAExtension.listContainsElementFromOther(newTrackIndex.keySet().toArray(), CustomNode.getTrackStopContains(stopTrack))){
+                            for (int key : newTrackIndex.keySet()){
+                                if(CustomNode.replaceTrackStopContains(stopTrack, key, newTrackIndex.get(key))){
+                                    xml.appendActionChild(stopTrack);
+                                    // update(filename + ": replaced " + key + " to " + CustomNode.getEventChildAttr(stopTrack, "TrackObject", "trackId", "id"));
+                                }
+                            }
+                        }
+                    }
                 }
 
                 xml.addComment("Mod By " + ChannelName + "! Subscribe: " + YoutubeLink + " ");
@@ -1376,13 +1416,27 @@ public class AOVModHelper {
             }
 
             xml.addComment("Mod for default");
-            for (Node node : effectTracks) {
-                Node track = node.cloneNode(true);
+            Map<Integer, Integer> newTrackIndexDefault = new HashMap<Integer, Integer>();
+            for (int i = 0; i < effectTrackIndexs.size(); i++) {
+                newTrackIndexDefault.put(effectTrackIndexs.get(i), xml.getNodeListByTagName("Track").getLength());
+                Node track = effectTracks.get(i).cloneNode(true);
                 // track.getAttributes().getNamedItem("enabled").setNodeValue("true");
                 for (ConditionInfo info : listEffectBaseCondition) {
                     CustomNode.insert(track, 0, ProjectXML.getConditionNode(info));
                 }
                 xml.appendActionChild(track);
+            }
+            List<Node> stopTrackList = xml.getTrackNodeByType("StopTrack");
+            for (int i = 0; i < stopTrackList.size(); i++){
+                Node stopTrack = stopTrackList.get(i).cloneNode(true);
+                if (DHAExtension.listContainsElementFromOther(newTrackIndexDefault.keySet().toArray(), CustomNode.getTrackStopContains(stopTrack))){
+                    for (int key : newTrackIndexDefault.keySet()){
+                        if(CustomNode.replaceTrackStopContains(stopTrack, key, newTrackIndexDefault.get(key))){
+                            xml.appendActionChild(stopTrack);
+                            // update(filename + ": replaced " + key + " to " + CustomNode.getEventChildAttr(stopTrack, "TrackObject", "trackId", "id"));
+                        }
+                    }
+                }
             }
 
             for (Node node : soundTracks) {
@@ -2432,7 +2486,7 @@ public class AOVModHelper {
         modList.removeIf(modInfo -> !modInfo.modSettings.modBack || modInfo.newSkin.getSkinLevel() < 4);
         if (modList.size() == 0)
             return;
-        update(" Dang mod hieu ung bien ve pack " + modPackName);
+        update(" Dang mod hieu ung bien ve multi pack " + modPackName);
         String inputZipPath = ActionsParentPath + "CommonActions.pkg.bytes";
         if (new File(saveModPath + modPackName
                 + "/files/Resources/" + AOVversion + "/Ages/Prefab_Characters/Prefab_Hero/CommonActions.pkg.bytes")

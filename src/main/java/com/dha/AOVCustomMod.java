@@ -24,72 +24,39 @@ public class AOVCustomMod {
         // taopack();
         // showSkinListHasLv(SkinLabel.SSS_HH.skinLevel);
 
-        String parentPath = "F:\\This PC\\Documents\\AOV\\New folder\\wirovethanskill\\";
-        Map<String, Node> trackMap = new HashMap<String, Node>();
-        Document doc = ProjectXML.convertStringToDocument(DHAExtension.ReadAllText("D:/defaultTrack.txt"));
-        for (String childName : new File(parentPath).list()){
-            String childPath = parentPath + childName;
-            try {
-                ProjectXML xml = new ProjectXML(DHAExtension.ReadAllText(childPath));
-                NodeList trackList = xml.getNodeListByTagName("Track");
-                for (int i = 0; i < trackList.getLength(); i++){
-                    String eventType = CustomNode.getAttribute(trackList.item(i), "eventType");
-                    Node node = null;
-                    if (trackMap.containsKey(eventType)){
-                        node = trackMap.get(eventType);
-                        Node event = CustomNode.getChild(trackList.item(i), "Event");
-                        for (int j = 0; j < event.getChildNodes().getLength(); j++){
-                            Node child = event.getChildNodes().item(j).cloneNode(true);
-                            if (CustomNode.getEventChildValue(node, child.getNodeName(), CustomNode.getAttribute(child, "name"))==null){
-                                child = node.getOwnerDocument().importNode(child, true);
-                                node.appendChild(child);
-                            }
-                        }
-                    }else{
-                        node = trackList.item(i);
-                        trackMap.put(eventType, node.cloneNode(true));
-                    }
-                }
-            } catch (Exception e) {
-                
+        CustomMod("1321 1322 1328", "5339 5136");        
+    }
+
+    public static void MultiMod(String baseSkin, String newSkin) throws Exception{
+        baseSkin = baseSkin.trim();
+        newSkin = newSkin.trim();
+        AOVModHelper helper = new AOVModHelper();
+        helper.setEcho(true);
+        Map<String, Skin> skinMap = new HashMap<>();
+        List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
+                HeroList.class).heros;
+        for (Hero hero : heroList) {
+            for (Skin skin : hero.skins) {
+                skinMap.put(skin.id, skin);
             }
         }
-        List<String> keys = new ArrayList<>(trackMap.keySet());
-        for (String key : keys){
-            Node node = doc.importNode(trackMap.get(key), true);
-            doc.getElementsByTagName("Action").item(0).appendChild(node);
+        helper.setModPackName("multipack" + baseSkin.substring(0, 3));
+        DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
+        String[] baseSkins = baseSkin.split(" ");
+        String[] newSkins = newSkin.split(" ");
+        List<ModInfo> modList = new ArrayList<>();
+        for (int i = 0; i < baseSkins.length; i++){
+            modList.add(new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
+                        new Skin(baseSkins[i], SkinLabel.Default)
+                })), skinMap.get(newSkins[i]), turnOnAll));
         }
-        DHAExtension.WriteAllText("D:/defaultTrack.txt", ProjectXML.convertDocumentToString(doc));
-
-        // CustomMod("1941", "15010 5373");
-        
-        // AOVModHelper helper = new AOVModHelper();
-        // helper.setEcho(true);
-        // Map<String, Skin> skinMap = new HashMap<>();
-        // List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
-        //         HeroList.class).heros;
-        // for (Hero hero : heroList) {
-        //     for (Skin skin : hero.skins) {
-        //         skinMap.put(skin.id, skin);
-        //     }
-        // }
-        // helper.setModPackName("testpack");
-        // DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
-        // String[] baseSkins = "1901 1902 1904 1906 1909".split(" ");
-        // String[] newSkins = "1908 19010 1907 19013 19014".split(" ");
-        // List<ModInfo> modList = new ArrayList<>();
-        // for (int i = 0; i < baseSkins.length; i++){
-        //     modList.add(new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
-        //                 new Skin(baseSkins[i], SkinLabel.Default)
-        //         })), skinMap.get(newSkins[i]), turnOnAll));
-        // }
-        // helper.modIcon(modList);
-        // helper.modLabel(modList);
-        // helper.modSound(modList);
-        // helper.modInfos(modList);
-        // helper.modActionsMulti(modList);
-        // helper.modBackMulti(modList);
-        // helper.modHasteMulti(modList);
+        helper.modIcon(modList);
+        helper.modLabel(modList);
+        helper.modSound(modList);
+        helper.modInfos(modList);
+        helper.modActionsMulti(modList);
+        helper.modBackMulti(modList);
+        helper.modHasteMulti(modList);
     }
 
     public static void CustomMod(String baseSkin, String newSkin) throws Exception{
@@ -108,12 +75,18 @@ public class AOVCustomMod {
                 skinMap.put(skin.id, skin);
             }
         }
-        helper.setModPackName("multipack"+baseSkin + " - " + newSkin);
+        helper.setModPackName("custompack"+baseSkin.split(" ")[0] + " - " + newSkin.split(" ")[0]);
         DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
         List<ModInfo> modList = new ArrayList<>();
-        modList.add(new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
-                    new Skin(baseSkin, SkinLabel.Default)
-            })), skinMap.get(newSkin.split(" ")[0]), turnOnAll));
+        List<Skin> baseSkinList = new ArrayList<>();
+        for (String id : baseSkin.split(" ")){
+            if (id.equals(id.substring(0, 3) + "1")){
+                baseSkinList.add(new Skin(id, SkinLabel.Default));
+            }else{
+                baseSkinList.add(skinMap.get(id));
+            }
+        }
+        modList.add(new ModInfo(baseSkinList, skinMap.get(newSkin.split(" ")[0]), turnOnAll));
         helper.modInfosCustom(modList);
         helper.modIcon(modList);
         helper.modLabel(modList);

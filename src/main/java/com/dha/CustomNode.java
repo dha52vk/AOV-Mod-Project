@@ -10,15 +10,44 @@ import manifold.ext.rt.api.This;
 
 @Extension
 public class CustomNode {
-    public static Node[] getParameterOfEventType(String eventType){
-        List<Node> parameterList = new ArrayList<>();
-        switch (eventType.toLowerCase()){
-            default: 
-                return null;
+    public static boolean replaceTrackStopContains(Node node, int oldIndex, int newIndex){
+        if ((node.getNodeName().equals("Track") && !getAttribute(node, "eventType").equals("StopTrack"))
+            || (node.getNodeName().equals("Event") && !getAttribute(node, "eventName").equals("StopTrack"))){
+                return false;
         }
-        // return parameterList.toArray(new Node[0]);
+        List<Integer> listTrackIndex = new ArrayList<>();
+        Node event = node;
+        if (!node.getNodeName().equals("Event"))
+            event = getChild(node, "Event");
+        for (int i = 0; i < event.getChildNodes().getLength(); i++){
+            Node child = event.getChildNodes().item(i);
+            if (child.getNodeName().equals("TrackObject")){
+                if (oldIndex == Integer.parseInt(getAttribute(child, "id"))){
+                    child.getAttributes().getNamedItem("id").setNodeValue(newIndex+"");
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
+    public static Integer[] getTrackStopContains(Node node){
+        if ((node.getNodeName().equals("Track") && !getAttribute(node, "eventType").equals("StopTrack"))
+            || (node.getNodeName().equals("Event") && !getAttribute(node, "eventName").equals("StopTrack"))){
+                return null;
+        }
+        List<Integer> listTrackIndex = new ArrayList<>();
+        Node event = node;
+        if (!node.getNodeName().equals("Event"))
+            event = getChild(node, "Event");
+        for (int i = 0; i < event.getChildNodes().getLength(); i++){
+            Node child = event.getChildNodes().item(i);
+            if (child.getNodeName().equals("TrackObject")){
+                listTrackIndex.add(Integer.parseInt(getAttribute(child, "id")));
+            }
+        }
+        return listTrackIndex.toArray(new Integer[0]);
+    }
 
     public static boolean checkEventType(Node node, String name){
         return checkEventType(node, new String[]{name});
@@ -44,16 +73,25 @@ public class CustomNode {
         }
         return null;
     }
+
+    public static String getEventChildAttr(Node node, String tagName, String childName, String attr) {
+        return getChildAttr(getChild(node, "Event"), tagName, childName, attr);
+    }
+
     public static String getEventChildValue(Node node, String tagName, String childName) {
         return getChildValue(getChild(node, "Event"), tagName, childName);
     }
 
     public static String getChildValue(Node node, String tagName, String childName) {
+        return getChildAttr(node, tagName, childName, "value");
+    }
+
+    public static String getChildAttr(Node node, String tagName, String childName, String attrName) {
         for (int i = 0; i < node.getChildNodes().getLength(); i++) {
             if (node.getChildNodes().item(i).getNodeName().equals(tagName)) {
                 if (node.getChildNodes().item(i).getAttributes().getNamedItem("name").getNodeValue()
                         .equals(childName)) {
-                    return node.getChildNodes().item(i).getAttributes().getNamedItem("value").getNodeValue();
+                    return node.getChildNodes().item(i).getAttributes().getNamedItem(attrName).getNodeValue();
                 }
             }
         }
