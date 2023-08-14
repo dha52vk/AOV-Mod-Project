@@ -7,8 +7,12 @@ public class Skin {
     public boolean changeAnim;
     public boolean hasDeathEffect;
     public boolean isAwakeSkin;
+    public boolean isComponentSkin;
+    public String componentEffectId;
+    public int componentLevel;
     public int levelSFXUnlock;
     public int levelVOXUnlock;
+    public String specialBackAnim;
     public String hasteName;
     public String hasteNameRun;
     public String hasteNameEnd;

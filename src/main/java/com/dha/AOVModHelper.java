@@ -62,7 +62,16 @@ public class AOVModHelper {
     };
     List<String> trackTypeNotRemoveCheckSkinId = Arrays
             .asList(new String[] { "CheckRandomRangeTick", "ChangeSkillTriggerTick", "CreateRandomNumTick",
-                    "HitTriggerTick", "RemoveBuffTick", "CheckSkillCombineConditionTick" });
+                    "HitTriggerTick", "HitTriggerDuration", "RemoveBuffTick", "CheckSkillCombineConditionTick" });
+
+    String[] nameElementRemoveSkinInName = new String[] { "ArtSkinPrefabLOD", "ArtSkinPrefabLODEx",
+            "ArtSkinLobbyShowLOD" };
+
+    Map<String, String[]> nameElementNotAddToDefault = new HashMap<String, String[]>(){
+        {
+            put("5443", new String[] { "TransConfigs" });
+        }
+    };
 
     public static List<String> idNotSwap = new ArrayList<>(Arrays.asList(new String[] {
             "19014", "11213", "13211", "50118", "16711", "19610", "13610", "11813", "5157", "5255",
@@ -95,6 +104,7 @@ public class AOVModHelper {
                     new String[] { "Play_Dance_Ryoma", "Play_Dance02_3Jumps_Ryoma", "Play_HeiRenTaiGuan_preview_02" }));
             put(166, Arrays.asList(new String[] { "Play_Dance_YaSe", "Play_Dance03_Arthur" }));
             put(167, Arrays.asList(new String[] { "Play_Dance_WuKong" }));
+            put(503, Arrays.asList(new String[] { "Play_Dance_Zuka", "Play_Dance_Zuka_503_dance03" }));
             put(510, Arrays.asList(new String[] { "Play_Dance_Liliana", "Play_Dance03_Liliana" }));
             put(535, Arrays.asList(new String[] { "Play_Dance_Sinestrea", "Play_Dance_FangFang_535" }));
         }
@@ -104,6 +114,7 @@ public class AOVModHelper {
         {
             put("1068", "Play_10607_dance04");
             put("11612", "Play_Dance_Butterfly_SAO_LiSiNa_Knife");
+            put("1319", "Play_Dance_Murad_Skin8");
             put("13110", "Dance04_Mojian");
             put("13111", "Dance04_Mojian");
             put("13311", "dance_10_texiao");
@@ -115,6 +126,7 @@ public class AOVModHelper {
             put("1668", "Stop_16607_m_Dance_JiXieWu");
             put("1676", "Play_Dance_WuKong_Skin5");
             put("1678", "dance_03_texiao");
+            put("5039", "Dance04_Run");
             put("51010", "Play_51009_Dance_WAVE");
             put("5354", "Play_53503_Dance_WAVE");
         }
@@ -123,7 +135,7 @@ public class AOVModHelper {
     String modPackName;
     boolean echo;
     boolean highlightMod = false;
-    boolean copyBattleFile = true;
+    boolean copyBattleFile = false;
     boolean zipModFile = true;
     boolean modSingleInPack = false;
 
@@ -204,6 +216,16 @@ public class AOVModHelper {
                         "/Ages/Prefab_Characters/Prefab_Hero/Actor_"
                         + modList.get(0).newSkin.id.substring(0, 3) + "_Actions.pkg.bytes";
                 highlightSkill(actionsPath, 4);
+                if (zipModFile) {
+                    String zipPath = saveModPath + String.format(zipNameFormat,
+                            DHAExtension.convertToTitleCase(
+                                    modList.size() == 1 ? modList.get(0).newSkin.name : modPackName) + " Skill Sáng Đậm");
+                    if (new File(zipPath).exists())
+                        new File(zipPath).delete();
+                    ZipExtension.zipDir(saveModPath + modPackName + " (highlight)" + "/files",
+                            zipPath,
+                            Deflater.BEST_COMPRESSION);
+                }
             }
 
             if (zipModFile) {
@@ -265,7 +287,7 @@ public class AOVModHelper {
             // if (!modInfo.modSettings.modInfo)
             // continue;
 
-            String newId = modInfo.newSkin.id;
+            String newId = modInfo.newSkin.isComponentSkin ? modInfo.newSkin.id.substring(0, modInfo.newSkin.id.length()-2) : modInfo.newSkin.id;
 
             String heroId = newId.substring(0, 3);
             update("    + Modding infos " + (l + 1) + "/" + modList.size() + ": " + modInfo);
@@ -332,48 +354,39 @@ public class AOVModHelper {
                         }
                     }
                     Element skin;
-                    if (!new File(SpecialPath + "infos/" + modInfo.newSkin.id + ".bytes").exists()) {
+                    if (!new File(SpecialPath + "infos/" + newId + ".bytes").exists()) {
                         skin = element.getChild("SkinPrefab").getChild(newIndex);
                     } else {
                         skin = new Element(
-                                DHAExtension.ReadAllBytes(SpecialPath + "infos/" + modInfo.newSkin.id + ".bytes"));
+                                DHAExtension.ReadAllBytes(SpecialPath + "infos/" + newId + ".bytes"));
                         element.getChild("SkinPrefab").setChild(newIndex, skin);
                     }
-                    if (skin.containsChild("useNewMecanim")) {
-                        // for (int s = 0; s < element.getChild("SkinPrefab").getChildLength(); s++) {
-                        // if (newIndex == s) {
-                        // continue;
-                        // }
-                        // Element skin2 = element.getChild("SkinPrefab").getChild(s);
-                        // String code = skin2.getChild(0).getChild(0).valueS;
-                        // if (code == null)
-                        // continue;
-                        // String[] split = code.split("/");
-                        // String id = split[split.length - 1].split("_")[0];
-                        // boolean kt = false;
-                        // for (int i = 0; i < modInfo.targetSkins.size(); i++) {
-                        // if (id.equals(modInfo.targetSkins.get(i).id)) {
-                        // kt = true;
-                        // }
-                        // }
-                        // if (kt) {
-                        // continue;
-                        // }
-                        // if (!skin2.containsChild("useNewMecanim")) {
-                        // skin2.setChild(0, skin.getChild(0));
-                        // // update(s + ": " + id + " replace because don't use new mec anim");
-                        // element.getChild("SkinPrefab").setChild(s, skin2);
-                        // }
-                        // }
-                    }
-                    String[] nameElementRemove = new String[] { "ArtSkinPrefabLOD", "ArtSkinPrefabLODEx",
-                            "ArtSkinLobbyShowLOD" };
                     for (int i = 0; i < skin.getChildLength(); i++) {
                         Element e = skin.getChild(i).clone();
                         // if (!Arrays.asList(nameElementModToDefault).contains(e.nameS))
                         // continue;
-                        if (Arrays.asList(nameElementRemove).contains(e.nameS))
+                        if (nameElementNotAddToDefault.containsKey(modInfo.newSkin.id) && Arrays.asList(nameElementNotAddToDefault.get(modInfo.newSkin.id)).contains(e.nameS))
+                            continue;
+                        if (Arrays.asList(nameElementRemoveSkinInName).contains(e.nameS)){
                             e.setName(e.nameS.replace("Skin", ""));
+                            if (modInfo.newSkin.isComponentSkin){
+                                int componentId = Integer.parseInt(modInfo.newSkin.id.substring(modInfo.newSkin.id.length()-2, modInfo.newSkin.id.length()));
+                                for (int j = 0; j < e.getChildLength(); j++){
+                                    Element child = e.getChild(j);
+                                    String[] split1 = child.valueS.split("/");
+                                    String[] split2 = split1[split1.length-1].split("_");
+                                    if (split1.length<3 || split2.length<3)
+                                        continue;
+                                    List<String> paths = new ArrayList<>(Arrays.asList(Arrays.copyOfRange(split1, 0, 3)));
+                                    paths.add("Component");
+                                    List<String> paths2 = new ArrayList<>(Arrays.asList(Arrays.copyOfRange(split2, 0, 2)));
+                                    paths2.add("RT_"+componentId);
+                                    paths2.add(split2[split2.length-1]);
+                                    paths.add(String.join("_", paths2));
+                                    child.setValue(String.join("/", paths));
+                                }
+                            }
+                        }
                         if (e.nameS.equals("useNewMecanim")) {
                             e.setName("oriSkinUseNewMecanim");
                         }
@@ -391,7 +404,6 @@ public class AOVModHelper {
                         // update(targetId + ": " + id + " - " + newId);
                         if (id.equals(newId)) {
                             newIndex = i;
-                            newSkin = skin.clone();
                             if (targetIndex != -1)
                                 break;
                         } else if (id.equals(targetId)) {
@@ -402,11 +414,35 @@ public class AOVModHelper {
                     }
                     if (targetIndex == -1)
                         continue;
-                    if (!new File(SpecialPath + "infos/" + modInfo.newSkin.id + ".bytes").exists()) {
+                    if (!new File(SpecialPath + "infos/" + newId + ".bytes").exists()) {
                         newSkin = element.getChild("SkinPrefab").getChild(newIndex);
                     } else {
                         newSkin = new Element(
-                                DHAExtension.ReadAllBytes(SpecialPath + "infos/" + modInfo.newSkin.id + ".bytes"));
+                                DHAExtension.ReadAllBytes(SpecialPath + "infos/" + newId + ".bytes"));
+                    }
+                    if (modInfo.newSkin.isComponentSkin){
+                        newSkin = newSkin.clone();
+                        for (int i = 0; i < newSkin.getChildLength(); i++) {
+                            Element e = newSkin.getChild(i);
+                            if (Arrays.asList(nameElementRemoveSkinInName).contains(e.nameS)){
+                                e.setName(e.nameS.replace("Skin", ""));
+                                int componentId = Integer.parseInt(modInfo.newSkin.id.substring(modInfo.newSkin.id.length()-2, modInfo.newSkin.id.length()));
+                                for (int j = 0; j < e.getChildLength(); j++){
+                                    Element child = e.getChild(j);
+                                    String[] split1 = child.valueS.split("/");
+                                    String[] split2 = split1[split1.length-1].split("_");
+                                    if (split1.length<3 || split2.length<3)
+                                        continue;
+                                    List<String> paths = new ArrayList<>(Arrays.asList(Arrays.copyOfRange(split1, 0, 3)));
+                                    paths.add("Component");
+                                    List<String> paths2 = new ArrayList<>(Arrays.asList(Arrays.copyOfRange(split2, 0, 2)));
+                                    paths2.add("RT_"+componentId);
+                                    paths2.add(split2[split2.length-1]);
+                                    paths.add(String.join("_", paths2));
+                                    child.setValue(String.join("/", paths));
+                                }
+                            }
+                        }
                     }
                     element.getChild("SkinPrefab").setChild(targetIndex, newSkin);
                 }
@@ -687,7 +723,7 @@ public class AOVModHelper {
             // }
             update("    + Modding actions " + (l + 1) + "/" + modList.size() + ": " + modInfo.newSkin);
 
-            String id = modInfo.newSkin.id;
+            String id = modInfo.newSkin.isComponentSkin ? modInfo.newSkin.id.substring(0, modInfo.newSkin.id.length()-2) : modInfo.newSkin.id;
             String heroId = id.substring(0, 3);
             String skinId = id.substring(3, id.length());
             int skin = Integer.parseInt(skinId) - 1;
@@ -752,12 +788,17 @@ public class AOVModHelper {
                                     return value;
                                 String[] split = value.split("/");
                                 String newValue;
-                                if (!modInfo.newSkin.isAwakeSkin) {
-                                    newValue = String.join("/", Arrays.copyOfRange(split, 0, 3)) + "/" + idMod + "/"
+                                if (modInfo.newSkin.isComponentSkin && modInfo.newSkin.componentLevel > SkinLabel.A.skinLevel){
+                                    newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + modInfo.newSkin.componentEffectId + "/"
                                             + split[split.length - 1];
-                                } else {
-                                    newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod + "_5/"
-                                            + split[split.length - 1];
+                                }else{
+                                    if (!modInfo.newSkin.isAwakeSkin) {
+                                        newValue = String.join("/", Arrays.copyOfRange(split, 0, 3)) + "/" + idMod + "/"
+                                                + split[split.length - 1];
+                                    } else {
+                                        newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod + "_5/"
+                                                + split[split.length - 1];
+                                    }
                                 }
                                 return newValue;
                             });
@@ -836,8 +877,8 @@ public class AOVModHelper {
                         // update(" *" + filename + ": " + listIndex +", " + listIndexNot);
                         boolean hasTrackCantRemove = false;
                         for (String type : trackTypeNotRemoveCheckSkinId) {
-                            if (skinIdAllowTrackCantRemoveMap.containsKey(modInfo.newSkin.id)
-                                    && skinIdAllowTrackCantRemoveMap.get(modInfo.newSkin.id).contains(type)) {
+                            if (skinIdAllowTrackCantRemoveMap.containsKey(id)
+                                    && skinIdAllowTrackCantRemoveMap.get(id).contains(type)) {
                                 continue;
                             }
                             List<Node> trackCantRemove = xml.getTrackNodeByType(type);
@@ -862,7 +903,7 @@ public class AOVModHelper {
                         if (!hasTrackCantRemove) {
                             for (int index : listIndex) {
                                 Node event = CustomNode.getChild(particle.item(index), "Event");
-                                CustomNode.setChildValue(event, "int", "skinId", heroId + "99");
+                                CustomNode.setChildValue(event, "int", "skinId", heroId + "98");
                                 Node bEqual = ProjectXML.convertStringToDocument(
                                         "<bool name=\"bEqual\" refParamName=\"\" useRefParam=\"false\" value=\"false\"/>")
                                         .getDocumentElement();
@@ -871,15 +912,15 @@ public class AOVModHelper {
                             }
                             for (int index : listIndexNot) {
                                 Node event = CustomNode.getChild(particle.item(index), "Event");
-                                CustomNode.setChildValue(event, "int", "skinId", heroId + "99");
+                                CustomNode.setChildValue(event, "int", "skinId", heroId + "98");
                                 CustomNode.remove(event, "bool", "bEqual");
                             }
                         }
                         for (int j = 0; j < particle.getLength(); j++) {
                             String eventType = particle.item(j).getAttributes()
                                     .getNamedItem("eventType").getNodeValue();
-                            if (!(skinIdAllowTrackCantRemoveMap.containsKey(modInfo.newSkin.id)
-                                    && skinIdAllowTrackCantRemoveMap.get(modInfo.newSkin.id).contains(eventType))
+                            if (!(skinIdAllowTrackCantRemoveMap.containsKey(id)
+                                    && skinIdAllowTrackCantRemoveMap.get(id).contains(eventType))
                                     && trackTypeNotRemoveCheckSkinId.contains(eventType)) {
                                 continue;
                             }
@@ -1579,7 +1620,7 @@ public class AOVModHelper {
             // continue;
             // }
 
-            String id = modInfo.newSkin.id;
+            String id = modInfo.newSkin.isComponentSkin ? modInfo.newSkin.id.substring(0, modInfo.newSkin.id.length()-2) : modInfo.newSkin.id;
             String heroId = id.substring(0, 3);
             String skinId = id.substring(3, id.length());
             int skin = Integer.parseInt(skinId) - 1;
@@ -1601,12 +1642,17 @@ public class AOVModHelper {
                     return value;
                 String[] split = value.split("/");
                 String newValue;
-                if (!modInfo.newSkin.isAwakeSkin) {
-                    newValue = String.join("/", Arrays.copyOfRange(split, 0, 3)) + "/" + idMod + "/"
+                if (modInfo.newSkin.isComponentSkin && modInfo.newSkin.componentLevel > SkinLabel.A.skinLevel){
+                    newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + modInfo.newSkin.componentEffectId + "/"
                             + split[split.length - 1];
-                } else {
-                    newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod + "_5/"
-                            + split[split.length - 1];
+                }else{
+                    if (!modInfo.newSkin.isAwakeSkin) {
+                        newValue = String.join("/", Arrays.copyOfRange(split, 0, 3)) + "/" + idMod + "/"
+                                + split[split.length - 1];
+                    } else {
+                        newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod + "_5/"
+                                + split[split.length - 1];
+                    }
                 }
                 return newValue;
             });
@@ -1692,7 +1738,7 @@ public class AOVModHelper {
             // }
             update("    + Modding lite bullets " + (l + 1) + "/" + modList.size() + ": " + modInfo.newSkin);
 
-            String id = modInfo.newSkin.id;
+            String id = modInfo.newSkin.isComponentSkin ? modInfo.newSkin.id.substring(0, modInfo.newSkin.id.length()-2) : modInfo.newSkin.id;
             String heroId = id.substring(0, 3);
             String skinId = id.substring(3, id.length());
             int skin = Integer.parseInt(skinId) - 1;
@@ -1707,10 +1753,15 @@ public class AOVModHelper {
             zis.close();
 
             String newCode, oldCode = "(?i)prefab_skill_effects/hero_skill_effects/" + heroCodeName;
-            if (!modInfo.newSkin.isAwakeSkin) {
-                newCode = "prefab_skill_effects/hero_skill_effects/" + heroCodeName + "/" + idMod;
-            } else {
-                newCode = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod + "_5";
+            
+            if (modInfo.newSkin.isComponentSkin && modInfo.newSkin.componentLevel > SkinLabel.A.skinLevel){
+                newCode = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + modInfo.newSkin.componentEffectId;
+            }else{
+                if (!modInfo.newSkin.isAwakeSkin) {
+                    newCode = "prefab_skill_effects/hero_skill_effects/" + heroCodeName + "/" + idMod;
+                } else {
+                    newCode = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod + "_5";
+                }
             }
             listBullet.replaceBulletEffect(Integer.parseInt(heroId), oldCode, newCode);
         }
@@ -1740,7 +1791,7 @@ public class AOVModHelper {
             // }
             update("    + Modding skill marks " + (l + 1) + "/" + modList.size() + ": " + modInfo.newSkin);
 
-            String id = modInfo.newSkin.id;
+            String id = modInfo.newSkin.isComponentSkin ? modInfo.newSkin.id.substring(0, modInfo.newSkin.id.length()-2) : modInfo.newSkin.id;
             String heroId = id.substring(0, 3);
             String skinId = id.substring(3, id.length());
             int skin = Integer.parseInt(skinId) - 1;
@@ -1755,10 +1806,14 @@ public class AOVModHelper {
             zis.close();
 
             String newCode, oldCode = "(?i)prefab_skill_effects/hero_skill_effects/" + heroCodeName;
-            if (!modInfo.newSkin.isAwakeSkin) {
-                newCode = "prefab_skill_effects/hero_skill_effects/" + heroCodeName + "/" + idMod;
-            } else {
-                newCode = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod + "_5";
+            if (modInfo.newSkin.isComponentSkin && modInfo.newSkin.componentLevel > SkinLabel.A.skinLevel){
+                newCode = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + modInfo.newSkin.componentEffectId;
+            }else{
+                if (!modInfo.newSkin.isAwakeSkin) {
+                    newCode = "prefab_skill_effects/hero_skill_effects/" + heroCodeName + "/" + idMod;
+                } else {
+                    newCode = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod + "_5";
+                }
             }
             listMark.replaceMarkEffect(Integer.parseInt(heroId), oldCode, newCode);
         }
@@ -1793,19 +1848,21 @@ public class AOVModHelper {
             // if (!modInfo.modSettings.modSound || modInfo.newSkin.getSkinLevel() < 3) {
             // continue;
             // }
+            String id = modInfo.newSkin.isComponentSkin ? modInfo.newSkin.id.substring(0, modInfo.newSkin.id.length()-2) : modInfo.newSkin.id;
             update("    + Modding sound " + (l + 1) + "/" + modList.size() + ": " + modInfo.newSkin);
-            int heroId = Integer.parseInt(modInfo.newSkin.id.substring(0, 3));
-            int targetId = heroId * 100 + Integer.parseInt(modInfo.newSkin.id.substring(3)) - 1;
+            int heroId = Integer.parseInt(id.substring(0, 3));
+            int targetId = heroId * 100 + Integer.parseInt(id.substring(3)) - 1;
             if (skinSoundSpecial.containsKey(targetId)) {
                 targetId = skinSoundSpecial.get(targetId);
                 // update(targetId + "");
             }
-            for (int f = 0; f < modInfo.targetSkins.size(); f++) {
+            // for (int f = 0; f < modInfo.targetSkins.size(); f++) {
+                int f=0;
                 int baseId = Integer.parseInt(modInfo.targetSkins.get(0).id.substring(0, 3)) * 100
                         + Integer.parseInt(modInfo.targetSkins.get(f).id.substring(3)) - 1;
                 for (int i = 0; i < soundListArr.length; i++) {
                     ListSoundElement targetSounds = null;
-                    String soundSpecial = SpecialPath + "sound/" + modInfo.newSkin.id + "/"
+                    String soundSpecial = SpecialPath + "sound/" + id + "/"
                             + new File(inputPaths[i]).getName();
                     if (new File(soundSpecial).exists()) {
                         targetSounds = new ListSoundElement(DHAExtension.ReadAllBytes(soundSpecial));
@@ -1823,7 +1880,7 @@ public class AOVModHelper {
                             soundListArr[i].setSound(baseId, targetSounds.soundElements);
                     }
                 }
-            }
+            // }
         }
         for (int i = 0; i < outputPaths.length; i++) {
             DHAExtension.WriteAllBytes(outputPaths[i], AOVAnalyzer.AOVCompress(soundListArr[i].getBytes()));
@@ -1832,7 +1889,7 @@ public class AOVModHelper {
 
     public void modMotion(List<ModInfo> modList) throws Exception {
         modList = new ArrayList<>(modList);
-        modList.removeIf(modInfo -> !skinDanceCode.containsKey(modInfo.newSkin.id) || !modInfo.modSettings.modMotion);
+        modList.removeIf(modInfo -> !skinDanceCode.containsKey(modInfo.newSkin.isComponentSkin ? modInfo.newSkin.id.substring(0, modInfo.newSkin.id.length()-2) : modInfo.newSkin.id) || !modInfo.modSettings.modMotion);
         if (modList.size() == 0)
             return;
         update(" Dang mod dieu nhay pack " + modPackName);
@@ -1850,9 +1907,10 @@ public class AOVModHelper {
             // if (!modInfo.modSettings.modIcon)
             // continue;
             update("    + Modding motion " + (l + 1) + "/" + modList.size() + ": " + modInfo);
+            String id = modInfo.newSkin.isComponentSkin ? modInfo.newSkin.id.substring(0, modInfo.newSkin.id.length()-2) : modInfo.newSkin.id;
             int heroId = Integer.parseInt(modInfo.newSkin.id.substring(0, 3));
             listMotionElement.copyMotion(heroId, heroDanceCode.get(heroId).toArray(new String[0]),
-                    skinDanceCode.get(modInfo.newSkin.id));
+                    skinDanceCode.get(id));
         }
         DHAExtension.WriteAllBytes(outputPath, AOVAnalyzer.AOVCompress(listMotionElement.getBytes()));
     }
@@ -1875,17 +1933,18 @@ public class AOVModHelper {
             // if (!modInfo.modSettings.modIcon)
             // continue;
             update("    + Modding icons " + (l + 1) + "/" + modList.size() + ": " + modInfo);
-            int heroId = Integer.parseInt(modInfo.newSkin.id.substring(0, 3));
-            int targetId = heroId * 100 + Integer.parseInt(modInfo.newSkin.id.substring(3)) - 1;
+            String id = modInfo.newSkin.isComponentSkin ? modInfo.newSkin.id.substring(0, modInfo.newSkin.id.length()-2) : modInfo.newSkin.id;
+            int heroId = Integer.parseInt(id.substring(0, 3));
+            int targetId = heroId * 100 + Integer.parseInt(id.substring(3)) - 1;
             byte[] iconBytes = null;
-            if (new File(SpecialPath + "actor/" + modInfo.newSkin.id + ".bytes").exists()) {
-                iconBytes = DHAExtension.ReadAllBytes(SpecialPath + "actor/" + modInfo.newSkin.id + ".bytes");
+            if (new File(SpecialPath + "actor/" + id + ".bytes").exists()) {
+                iconBytes = DHAExtension.ReadAllBytes(SpecialPath + "actor/" + id + ".bytes");
             }
             for (Skin skin : modInfo.targetSkins) {
                 int baseId = Integer.parseInt(modInfo.targetSkins.get(0).id.substring(0, 3)) * 100
                         + Integer.parseInt(skin.id.substring(3)) - 1;
                 if (iconBytes == null) {
-                    listIconElement.copyIcon(baseId, targetId, !idNotSwap.contains(modInfo.newSkin.id));
+                    listIconElement.copyIcon(baseId, targetId, !idNotSwap.contains(id));
                 } else {
                     listIconElement.setIcon(baseId, iconBytes);
                     listIconElement.setIcon(targetId, iconBytes);
@@ -1914,11 +1973,12 @@ public class AOVModHelper {
             // if (!modInfo.modSettings.modIcon)
             // continue;
             update("    + Modding label " + (l + 1) + "/" + modList.size() + ": " + modInfo);
-            int heroId = Integer.parseInt(modInfo.newSkin.id.substring(0, 3));
-            int targetId = heroId * 100 + Integer.parseInt(modInfo.newSkin.id.substring(3)) - 1;
+            String id = modInfo.newSkin.isComponentSkin ? modInfo.newSkin.id.substring(0, modInfo.newSkin.id.length()-2) : modInfo.newSkin.id;
+            int heroId = Integer.parseInt(id.substring(0, 3));
+            int targetId = heroId * 100 + Integer.parseInt(id.substring(3)) - 1;
             byte[] iconBytes = null;
-            if (new File(SpecialPath + "shop/" + modInfo.newSkin.id + ".bytes").exists()) {
-                iconBytes = DHAExtension.ReadAllBytes(SpecialPath + "shop/" + modInfo.newSkin.id + ".bytes");
+            if (new File(SpecialPath + "shop/" + id + ".bytes").exists()) {
+                iconBytes = DHAExtension.ReadAllBytes(SpecialPath + "shop/" + id + ".bytes");
             }
             for (Skin skin : modInfo.targetSkins) {
                 int baseId = Integer.parseInt(modInfo.targetSkins.get(0).id.substring(0, 3)) * 100
@@ -1949,7 +2009,11 @@ public class AOVModHelper {
                     }
                 } else {
                     listLabelElement.setLabel(baseId, iconBytes);
-                    listLabelElement.setLabel(targetId, iconBytes);
+                    try{
+                        listLabelElement.setLabel(targetId, iconBytes);
+                    }catch(Exception e){
+
+                    }
                 }
             }
         }
@@ -2009,7 +2073,8 @@ public class AOVModHelper {
             String heroCodeName = entryGetName.getName().split("/")[1];
             zis.close();
 
-            String skinId = modInfo.newSkin.id.substring(3, modInfo.newSkin.id.length());
+            String id = modInfo.newSkin.isComponentSkin ? modInfo.newSkin.id.substring(0, modInfo.newSkin.id.length()-2) : modInfo.newSkin.id;
+            String skinId = id.substring(3);
             int skin = Integer.parseInt(skinId) - 1;
             int idMod = hero * 100 + skin;
             backXml.insertActionChild(l + 1, ProjectXML.getCheckHeroTickNode(l,
@@ -2063,7 +2128,7 @@ public class AOVModHelper {
                     }
                 }
             }
-            if (modInfo.newSkin.isAwakeSkin) {
+            if (modInfo.newSkin.specialBackAnim != null) {
                 for (int i = 0; i < baseAnimTrack.size(); i++) {
                     Node track = baseAnimTrack.get(i).cloneNode(true);
                     for (int j = 0; j < track.getChildNodes().item(track.getChildNodes().getLength() - 2)
@@ -2074,7 +2139,7 @@ public class AOVModHelper {
                         if (node.getAttributes() != null) {
                             if (node.getAttributes().getNamedItem("name").getNodeValue().equals("clipName")) {
                                 String value = node.getAttributes().getNamedItem("value").getNodeValue();
-                                node.getAttributes().getNamedItem("value").setNodeValue(idMod + "/Awaken/" + value);
+                                node.getAttributes().getNamedItem("value").setNodeValue(modInfo.newSkin.specialBackAnim + "/" + value);
                             }
                         }
                     }
@@ -2099,12 +2164,17 @@ public class AOVModHelper {
                             // node.getAttributes().getNamedItem("refParamName").setNodeValue("");
                             String[] split = value.split("/");
                             String newValue;
-                            if (!modInfo.newSkin.isAwakeSkin) {
-                                newValue = "prefab_skill_effects/hero_skill_effects/" + heroCodeName + "/" + idMod + "/"
+                            if (modInfo.newSkin.isComponentSkin && modInfo.newSkin.componentLevel >= SkinLabel.SS.skinLevel){
+                                newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + modInfo.newSkin.componentEffectId + "/"
                                         + split[split.length - 1];
-                            } else {
-                                newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod + "_5/"
-                                        + split[split.length - 1];
+                            }else{
+                                if (!modInfo.newSkin.isAwakeSkin) {
+                                    newValue = "prefab_skill_effects/hero_skill_effects/" + heroCodeName + "/" +
+                                            idMod + "/" + split[split.length - 1];
+                                } else {
+                                    newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod + "_5/"
+                                            + split[split.length - 1];
+                                }
                             }
                             node.getAttributes().getNamedItem("value").setNodeValue(newValue);
                             j++;
@@ -2163,8 +2233,7 @@ public class AOVModHelper {
                 "/files/Resources/" + AOVversion + "/Ages/Prefab_Characters/Prefab_Hero/CommonActions.pkg.bytes")
                 .exists())
             inputZipPath = saveModPath + modPackName
-                    +
-                    "/files/Resources/" + AOVversion + "/Ages/Prefab_Characters/Prefab_Hero/CommonActions.pkg.bytes";
+                    + "/files/Resources/" + AOVversion + "/Ages/Prefab_Characters/Prefab_Hero/CommonActions.pkg.bytes";
 
         if (new File(cacheModPath2).exists()) {
             DHAExtension.deleteDir(cacheModPath2);
@@ -2250,7 +2319,8 @@ public class AOVModHelper {
                 String heroCodeName = entryGetName.getName().split("/")[1];
                 zis.close();
 
-                String skinId = modInfo.newSkin.id.substring(3, modInfo.newSkin.id.length());
+                String id = modInfo.newSkin.isComponentSkin ? modInfo.newSkin.id.substring(0, modInfo.newSkin.id.length()-2) : modInfo.newSkin.id;
+                String skinId = id.substring(3, id.length());
                 int skin = Integer.parseInt(skinId) - 1;
                 int idMod = hero * 100 + skin;
                 hasteXml.insertActionChild(l + 1, ProjectXML.getCheckHeroTickNode(l,
@@ -2276,13 +2346,17 @@ public class AOVModHelper {
                                         return value;
                                     String[] split = value.split("/");
                                     String newValue;
-                                    if (!modInfo.newSkin.isAwakeSkin) {
-                                        newValue = String.join("/", Arrays.copyOfRange(split, 0, 3)) + "/" + idMod + "/"
+                                    if (modInfo.newSkin.isComponentSkin && modInfo.newSkin.componentLevel > SkinLabel.A.skinLevel){
+                                        newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + modInfo.newSkin.componentEffectId + "/"
                                                 + split[split.length - 1];
-                                    } else {
-                                        newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod
-                                                + "_5/"
-                                                + split[split.length - 1];
+                                    }else{
+                                        if (!modInfo.newSkin.isAwakeSkin) {
+                                            newValue = String.join("/", Arrays.copyOfRange(split, 0, 3)) + "/" + idMod + "/"
+                                                    + split[split.length - 1];
+                                        } else {
+                                            newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod + "_5/"
+                                                    + split[split.length - 1];
+                                        }
                                     }
                                     return newValue;
                                 });
@@ -2376,12 +2450,17 @@ public class AOVModHelper {
                                 if (modInfo.newSkin.hasteName != null) {
                                     endEffect = modInfo.newSkin.hasteName;
                                 }
-                                if (!modInfo.newSkin.isAwakeSkin) {
-                                    newValue = "prefab_skill_effects/hero_skill_effects/" + heroCodeName + "/" +
-                                            idMod + "/" + endEffect;
-                                } else {
-                                    newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod +
-                                            "_5/" + endEffect;
+                                if (modInfo.newSkin.isComponentSkin && modInfo.newSkin.componentLevel >= SkinLabel.SSS_HH.skinLevel){
+                                    newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + modInfo.newSkin.componentEffectId + "/"
+                                            + endEffect;
+                                }else{
+                                    if (!modInfo.newSkin.isAwakeSkin) {
+                                        newValue = "prefab_skill_effects/hero_skill_effects/" + heroCodeName + "/" +
+                                                idMod + "/" + endEffect;
+                                    } else {
+                                        newValue = "Prefab_Skill_Effects/Component_Effects/" + idMod + "/" + idMod + "_5/"
+                                                + endEffect;
+                                    }
                                 }
                                 node.getAttributes().getNamedItem("value").setNodeValue(newValue);
                                 j++;
@@ -2524,7 +2603,8 @@ public class AOVModHelper {
             // }
             update("    + Modding back " + (l + 1) + "/" + modList.size() + ": " + modInfo.newSkin);
 
-            int hero = Integer.parseInt(modInfo.newSkin.id.substring(0, 3));
+            String id = modInfo.newSkin.isComponentSkin ? modInfo.newSkin.id.substring(0, modInfo.newSkin.id.length()-2) : modInfo.newSkin.id;
+            int hero = Integer.parseInt(id.substring(0, 3));
 
             ZipInputStream zis = new ZipInputStream(
                     new FileInputStream(InfosParentPath + "Actor_" + hero + "_Infos.pkg.bytes"));
@@ -2534,7 +2614,7 @@ public class AOVModHelper {
             String heroCodeName = entryGetName.getName().split("/")[1];
             zis.close();
 
-            String skinId = modInfo.newSkin.id.substring(3, modInfo.newSkin.id.length());
+            String skinId = id.substring(3, id.length());
             int skin = Integer.parseInt(skinId) - 1;
             int idMod = hero * 100 + skin;
             int oriIdMod = hero * 100

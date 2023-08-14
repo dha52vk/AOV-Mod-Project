@@ -23,8 +23,19 @@ public class AOVCustomMod {
     public static void main(String[] args) throws Exception {
         // taopack();
         // showSkinListHasLv(SkinLabel.SSS_HH.skinLevel);
-
-        CustomMod("1321 1322 1328", "5339 5136");        
+        
+        Element element = new Element(DHAExtension.ReadAllBytes("F:\\This PC\\Documents\\AOV\\Resources\\116_JingKe_actorinfo.bytes.decompressed"));
+        System.out.println("Hero: ");
+        Map<String, String> defaultChild = new HashMap<String, String>(); 
+        for (Element child : element.childList){
+            defaultChild.put(child.nameS, child.valueS);
+            System.out.println(child.nameS);
+        }
+        System.out.println("\n\nSkin: ");
+        for (Element child : element.getChild("SkinPrefab").getChild(16).childList){
+            if (defaultChild.containsKey(child.nameS))
+                System.out.println(child.nameS + ": " + defaultChild.get(child.nameS) + " - " + child.valueS);
+        }
     }
 
     public static void MultiMod(String baseSkin, String newSkin) throws Exception{
