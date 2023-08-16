@@ -1598,8 +1598,22 @@ class Element {
         return childMap.containsKey(name);
     }
 
+    public boolean removeChild(String name){
+        if (!containsChild(name))
+            return false;
+
+        for (int i = 0; i < childList.size(); i++){
+            if (childList.get(i).nameS.equals(name)){
+                removeChildAt(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void removeChildAt(int index) {
         if (childList != null && index < childList.size()) {
+            childMap.remove(childList.get(index).nameS);
             childList.remove(index);
         }
     }

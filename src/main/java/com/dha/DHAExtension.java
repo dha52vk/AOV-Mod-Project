@@ -192,6 +192,8 @@ public class DHAExtension {
     public static void copy(String source, String dest) {
         File sourceFile = new File(source);
         File destFile = new File(dest);
+        if (!sourceFile.exists())
+            return;
         if (sourceFile.isFile()) {
             if (!destFile.isDirectory()) {
                 copyFile(source, dest);

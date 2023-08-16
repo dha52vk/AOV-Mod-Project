@@ -25,21 +25,22 @@ import com.google.gson.Gson;
 
 public class AOVModHelper {
     public static String zipNameFormat = "Mod Skin %s 31.7 (Izumi Tv).zip";
+    public static String seasonName = "S3Y23";
     public static String heroListJsonPath = "D:/skinlist.json";
     public static String ChannelName = "IzumiTv";
     public static String YoutubeLink = "https://www.youtube.com/@MiyamuraModAOV";
 
     public static String AOVversion = "1.51.1";
-    public static String ExtraPath = "F:\\This PC\\Documents\\AOV\\Extra\\2019.V2\\";
-    public static String SkinBattlePath = "F:\\This PC\\Documents\\AOV\\Extra\\2019.V2\\assetbundle\\battle\\skin\\";
-    public static String InfosParentPath = "F:/This PC/Documents/AOV/Resources/" + AOVversion + "/Prefab_Characters/";
-    public static String ActionsParentPath = "F:/This PC/Documents/AOV/Resources/" + AOVversion
-            + "/Ages/Prefab_Characters/Prefab_Hero/";
-    public static String DatabinPath = "F:/This PC/Documents/AOV/Resources/" + AOVversion + "/Databin/Client/";
-    public static String AssetRefsPath = "F:/This PC/Documents/AOV/Resources/" + AOVversion + "/AssetRefs/";
+    public static String ExtraVersion = "2019.V2";
+    public static String ExtraPath = "F:\\This PC\\Documents\\AOV\\Extra\\" + ExtraVersion + "\\";
+    public static String SkinBattlePath = "F:\\This PC\\Documents\\AOV\\Extra\\" + ExtraVersion + "\\assetbundle\\battle\\skin\\";
+    public static String ResourcesPath = "F:/This PC/Documents/AOV/Resources/" + AOVversion +"/";
+    public static String InfosParentPath = ResourcesPath + "Prefab_Characters/";
+    public static String ActionsParentPath = ResourcesPath + "Ages/Prefab_Characters/Prefab_Hero/";
+    public static String DatabinPath = ResourcesPath + "Databin/Client/";
+    public static String AssetRefsPath = ResourcesPath + "AssetRefs/";
     public static String LanguageCode = "VN_Garena_VN"; // "CHT_Garena_TW";
-    public static String LanguagePath = "F:/This PC/Documents/AOV/Resources/" + AOVversion + "/Languages/"
-            + LanguageCode + "/";
+    public static String LanguagePath = ResourcesPath + "Languages/" + LanguageCode + "/";
     public static String SpecialPath = ".special/";
     public static String saveModPath = "F:/This PC/Documents/AOV/modsave/";
     public static String cacheModPath = "F:/This PC/Documents/AOV/cachemod/";
@@ -61,9 +62,10 @@ public class AOVModHelper {
         }
     };
     List<String> trackTypeNotRemoveCheckSkinId = Arrays
-            .asList(new String[] { "CheckRandomRangeTick", "ChangeSkillTriggerTick", "CreateRandomNumTick",
-                    "HitTriggerTick", "HitTriggerDuration", "RemoveBuffTick", "CheckSkillCombineConditionTick",
-                    "SpawnBulletTick" });
+            .asList(new String[] { "CheckRandomRangeTick", "ChangeSkillTriggerTick", "CreateRandomNumTick"
+                    // , "SpawnBulletTick", "SpawnObjectDuration", "SetCollisionTick", "MoveBulletDuration",
+                    // "HitTriggerTick", "HitTriggerDuration", "RemoveBuffTick", "CheckSkillCombineConditionTick",
+                });
 
     Map<String, String> trackChildValueNotRemoveCheckSkinId = new HashMap<String, String>(){
         {
@@ -76,23 +78,45 @@ public class AOVModHelper {
         "targetId", "resourceName", "scalingInt", "bAllowEmptyEffect", "syncAnimationName", "customTagName",
         "objectSpaceId", "lifeTime", "bindPosOffset", "bUseRealScaling", "applyActionSpeedToParticle", "bindPointName",
         "applyActionSpeedToAnimation", "bNoDynamicLod", "lookTargetId", "bHideWhenDead", "bIgnoreWhenHideModel",
-        "bForceShowParticle", "bBullerPosDir", "enableMaxFollowTime", "maxFollowTime",
+        "bForceShowParticle", "bBullerPosDir", "enableMaxFollowTime", "maxFollowTime", "bindRotOffset",
+        //type MoveBulletDuration
+        "MoveType", "offsetDir", "distance", "velocity",
         //type MoveBeamDuration
         "sourceId", "bindDestOffet", "textureScale", "keyColor",
         //type SetActorNodeActiveDuration
         "node", "enabled",
         //type PlayAnimDuration
-        "clipName", "crossFadeTime", "bUseFadeOutTime", "fadeOutTime",
+        "clipName", "crossFadeTime", "bUseFadeOutTime", "fadeOutTime", "applyActionSpeed",
         //type StopTrack
-        "trackId",  "trackIds", "alsoStopNotStartedTrack"
+        "trackId",  "trackIds", "alsoStopNotStartedTrack",
+        //type SpawnBulletTick
+        "ActionName", "bDeadRemove", "bulletTypeId",
+        //type SpawnLiteObjDuration
+        "OutputLiteBulletName", "ConfigID", "ReferenceID", "TargetID",
+        //type SpawnObjectDuration
+        "prefabName", "translation", "modifyDirection", "direction", "materialParentActorId", "modifyScaling", "visionActorId",
+        "bUseSkin", "recordTargeID",
+        //type SetCollisionTick
+        "type", "Size", "Rotation",
+        //type CheckSkillCombineConditionTick
+        "skillCombineId", "checkOPType", "skillCombineLevel",
+        //type HitTriggerTick
+        "SelfSkillCombineID_1", "SelfSkillCombineID_2", "SelfSkillCombineID_3", "SelfSkillCombineID_3", "SelfSkillCombineID_4",
+        "SelfSkillCombineID_5", "SelfSkillCombineID_6", "triggerId", "lastHit", "TargetSkillCombine_1", "TargetSkillCombine_3"
+        , "TargetSkillCombine_2", "TargetSkillCombine_4", "TargetSkillCombine_5", "TargetSkillCombine_6"
     });
 
     String[] nameElementRemoveSkinInName = new String[] { "ArtSkinPrefabLOD", "ArtSkinPrefabLODEx",
             "ArtSkinLobbyShowLOD" };
 
+    List<String> nameElementNotAddToDefaultAll = Arrays.asList(new String[]{
+
+    });
+
     Map<String, String[]> nameElementNotAddToDefault = new HashMap<String, String[]>(){
         {
             put("5443", new String[] { "TransConfigs" });
+            // put("11612", new String[] { "bDisableDirLight", "LookAt", "LightConfig" });
         }
     };
 
@@ -201,7 +225,7 @@ public class AOVModHelper {
             if (copyBattleFile && modList.size() < 6) {
                 update(" Copying battle files...");
                 String battlePath = saveModPath + modPackName +
-                        "/files/Extra/2019.V2/assetbundle/battle/skin/";
+                        "/files/Extra/" + ExtraVersion + "/assetbundle/battle/skin/";
                 new File(battlePath).mkdirs();
                 for (ModInfo modInfo : modList) {
                     FilenameFilter filter = (parent, filename) -> {
@@ -277,6 +301,58 @@ public class AOVModHelper {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void modMapHD(boolean saveBaseMap){
+        update(" Dang mod map hd...");
+        String hdMapModFolderName = "mod_map_hd";
+        DHAExtension.deleteDir(saveModPath + hdMapModFolderName);
+        DHAExtension.deleteDir(saveModPath + hdMapModFolderName + "_reverse");
+        String[] hdMapExtraPath = new String[]{
+            "assetbundle\\scene\\scene_artist_5v5_v4_hd.assetbundle",
+            "assetbundle\\scene\\scene_artist_5v5_v4_hd_raw.assetbundle",
+            "assetbundle\\scene\\scene_artist_5v5_v4_raw.assetbundle"
+        };
+        String[] hdMapResourcesPath = new String[]{
+            "assetbundle\\scene\\scene_artist_5v5_v4_low_raw.assetbundle"
+        };
+        String[] lowMapExtraPath = new String[]{
+            "assetbundle\\scene\\scene_artist_5v5_v4.assetbundle"
+        };
+        String[] lowMapResourcesPath = new String[]{
+            "assetbundle\\scene\\scene_artist_5v5_v4_low.assetbundle"
+        };
+        for (String subpath : hdMapExtraPath){
+            DHAExtension.copy(ExtraPath + subpath, saveModPath + hdMapModFolderName +"\\files\\Extra\\" + ExtraVersion + "\\" + subpath);
+        }
+        for (String subpath : hdMapResourcesPath){
+            DHAExtension.copy(ResourcesPath + subpath, saveModPath + hdMapModFolderName +"\\files\\Resources\\" + AOVversion +"\\" + subpath);
+        }
+        if (saveBaseMap){
+            update("  - Dang tao file khoi phuc map goc...");
+            for (String subpath : lowMapExtraPath){
+                DHAExtension.copy(ExtraPath + subpath, saveModPath + hdMapModFolderName +"\\files\\Extra\\" + ExtraVersion + "\\" + subpath);
+            }
+            for (String subpath : lowMapResourcesPath){
+                DHAExtension.copy(ResourcesPath + subpath, saveModPath + hdMapModFolderName +"\\files\\Resources\\" + AOVversion +"\\" + subpath);
+            }
+            DHAExtension.copy(saveModPath + hdMapModFolderName, saveModPath + hdMapModFolderName + "_reverse");
+            String saveZipPath = saveModPath + "Khôi Phục Map Gốc " + seasonName + " (" + ChannelName + ").zip";
+            DHAExtension.deleteDir(saveZipPath);
+            ZipExtension.zipDir(saveModPath + hdMapModFolderName + "_reverse/files", saveZipPath, Deflater.BEST_SPEED);
+        }
+        update("  - Dang tao file map hd...");
+        for (String subpath : lowMapExtraPath){
+            DHAExtension.WriteAllText(saveModPath + hdMapModFolderName +"\\files\\Extra\\" + ExtraVersion + "\\" + subpath,
+                "Mod Map HD By " + ChannelName + " - " + YoutubeLink);
+        }
+        for (String subpath : lowMapResourcesPath){
+            DHAExtension.WriteAllText(saveModPath + hdMapModFolderName +"\\files\\Resources\\" + AOVversion +"\\" + subpath,
+                "Mod Map HD By " + ChannelName + " - " + YoutubeLink);
+        }
+        String saveZipPath = saveModPath + "Mod Map HD " + seasonName + " (" + ChannelName + ").zip";
+        DHAExtension.deleteDir(saveZipPath);
+        ZipExtension.zipDir(saveModPath + hdMapModFolderName + "/files", saveZipPath, Deflater.BEST_SPEED);
     }
 
     public void modInfos(List<ModInfo> modList) throws Exception {
@@ -388,7 +464,8 @@ public class AOVModHelper {
                         Element e = skin.getChild(i).clone();
                         // if (!Arrays.asList(nameElementModToDefault).contains(e.nameS))
                         // continue;
-                        if (nameElementNotAddToDefault.containsKey(modInfo.newSkin.id) && Arrays.asList(nameElementNotAddToDefault.get(modInfo.newSkin.id)).contains(e.nameS))
+                        if ((nameElementNotAddToDefault.containsKey(modInfo.newSkin.id) && Arrays.asList(nameElementNotAddToDefault.get(modInfo.newSkin.id)).contains(e.nameS))
+                            || nameElementNotAddToDefaultAll.contains(e.nameS))
                             continue;
                         if (Arrays.asList(nameElementRemoveSkinInName).contains(e.nameS)){
                             e.setName(e.nameS.replace("Skin", ""));
@@ -413,6 +490,7 @@ public class AOVModHelper {
                         if (e.nameS.equals("useNewMecanim")) {
                             e.setName("oriSkinUseNewMecanim");
                         }
+                        element.removeChild(e.nameS);
                         element.addChild(removeAt, e);
                     }
                 } else {
