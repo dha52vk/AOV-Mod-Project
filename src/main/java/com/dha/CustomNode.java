@@ -88,8 +88,9 @@ public class CustomNode {
 
     public static String getChildAttr(Node node, String tagName, String childName, String attrName) {
         for (int i = 0; i < node.getChildNodes().getLength(); i++) {
-            if (node.getChildNodes().item(i).getNodeName().equals(tagName)) {
-                if (node.getChildNodes().item(i).getAttributes().getNamedItem("name").getNodeValue()
+            if (tagName.equals("") || node.getChildNodes().item(i).getNodeName().equals(tagName)) {
+                if (node.getChildNodes().item(i).getAttributes() != null &&
+                    node.getChildNodes().item(i).getAttributes().getNamedItem("name").getNodeValue()
                         .equals(childName)) {
                     return node.getChildNodes().item(i).getAttributes().getNamedItem(attrName).getNodeValue();
                 }

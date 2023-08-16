@@ -1615,7 +1615,7 @@ class Element {
     }
 
     public void addChild(int index, Element e) {
-        if (childList == null || index < 0 || index > childList.size())
+        if (childList == null || index < 0 || index >= childList.size())
             return;
         if (childList.size() == 0) {
             bytes = DHAExtension.mergeBytes(bytes, new byte[] { 1, 0, 0, 0 });

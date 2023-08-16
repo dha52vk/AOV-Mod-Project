@@ -62,7 +62,30 @@ public class AOVModHelper {
     };
     List<String> trackTypeNotRemoveCheckSkinId = Arrays
             .asList(new String[] { "CheckRandomRangeTick", "ChangeSkillTriggerTick", "CreateRandomNumTick",
-                    "HitTriggerTick", "HitTriggerDuration", "RemoveBuffTick", "CheckSkillCombineConditionTick" });
+                    "HitTriggerTick", "HitTriggerDuration", "RemoveBuffTick", "CheckSkillCombineConditionTick",
+                    "SpawnBulletTick" });
+
+    Map<String, String> trackChildValueNotRemoveCheckSkinId = new HashMap<String, String>(){
+        {
+            put("bOnlyFollowPos", "true");
+        }
+    };
+
+    List<String> notBugChildName = Arrays.asList(new String[]{
+        //type TriggerParticle
+        "targetId", "resourceName", "scalingInt", "bAllowEmptyEffect", "syncAnimationName", "customTagName",
+        "objectSpaceId", "lifeTime", "bindPosOffset", "bUseRealScaling", "applyActionSpeedToParticle", "bindPointName",
+        "applyActionSpeedToAnimation", "bNoDynamicLod", "lookTargetId", "bHideWhenDead", "bIgnoreWhenHideModel",
+        "bForceShowParticle", "bBullerPosDir", "enableMaxFollowTime", "maxFollowTime",
+        //type MoveBeamDuration
+        "sourceId", "bindDestOffet", "textureScale", "keyColor",
+        //type SetActorNodeActiveDuration
+        "node", "enabled",
+        //type PlayAnimDuration
+        "clipName", "crossFadeTime", "bUseFadeOutTime", "fadeOutTime",
+        //type StopTrack
+        "trackId",  "trackIds", "alsoStopNotStartedTrack"
+    });
 
     String[] nameElementRemoveSkinInName = new String[] { "ArtSkinPrefabLOD", "ArtSkinPrefabLODEx",
             "ArtSkinLobbyShowLOD" };
@@ -900,6 +923,27 @@ public class AOVModHelper {
                                     break;
                             }
                         }
+                        List<String> guidNotCheckId = new ArrayList<>();
+                        {
+                            NodeList conditions = xml.getNodeListByTagName("Condition");
+                            for (int i = 0; i < conditions.getLength(); i++){
+                                Node condition = conditions.item(i);
+                                int condiId = Integer.parseInt(CustomNode.getAttribute(condition, "id"));
+                                if (listIndex.contains(condiId) || listIndexNot.contains(condiId)){
+                                    Node event = CustomNode.getChild(condition.getParentNode(), "Event");
+                                    for (String name : trackChildValueNotRemoveCheckSkinId.keySet()){
+                                        String value = CustomNode.getChildValue(event, "", name);
+                                        if (value != null && value.equals(trackChildValueNotRemoveCheckSkinId.get(name))){
+                                            hasTrackCantRemove = true;
+                                            update("      *" + filename + " has track can't remove: " + CustomNode.getAttribute(condition.getParentNode(), "eventType")
+                                                + "(" + CustomNode.getAttribute(condition.getParentNode(), "guid") + ")"+ " has child " + name );
+                                            guidNotCheckId.add(CustomNode.getAttribute(condition.getParentNode(), "guid"));
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         if (!hasTrackCantRemove) {
                             for (int index : listIndex) {
                                 Node event = CustomNode.getChild(particle.item(index), "Event");
@@ -921,7 +965,8 @@ public class AOVModHelper {
                                     .getNamedItem("eventType").getNodeValue();
                             if (!(skinIdAllowTrackCantRemoveMap.containsKey(id)
                                     && skinIdAllowTrackCantRemoveMap.get(id).contains(eventType))
-                                    && trackTypeNotRemoveCheckSkinId.contains(eventType)) {
+                                    && trackTypeNotRemoveCheckSkinId.contains(eventType)
+                                || guidNotCheckId.contains(particle.item(j).getAttributes().getNamedItem("guid").getNodeValue())) {
                                 continue;
                             }
                             Map<Integer, Boolean> conditions = ProjectXML.getTrackConditions(particle.item(j));
@@ -953,6 +998,13 @@ public class AOVModHelper {
                                 update("      *" + filename + ": enabled "
                                         + CustomNode.getAttribute(particle.item(j), "trackName") +
                                         "(type: " + CustomNode.getAttribute(particle.item(j), "eventType") + ")");
+                                Node event = CustomNode.getChild(particle.item(j), "Event");
+                                for (int i = 0; i < event.getChildNodes().getLength(); i++){
+                                    Node child = event.getChildNodes().item(i);
+                                    if (child.getAttributes() != null && !notBugChildName.contains(CustomNode.getAttribute(child, "name"))){
+                                        update("New child name found: " + CustomNode.getAttribute(child, "name"));
+                                    }
+                                }
                                 if (hasTrackCantRemove) {
                                     ProjectXML.removeTrackCondition(particle.item(j), enIndex);
                                 }
@@ -2117,8 +2169,9 @@ public class AOVModHelper {
                                     .contains("stoptrack")
                             && !nodeList.item(i).getAttributes().getNamedItem("trackName").getNodeValue().toLowerCase()
                                     .contains("getresource")
-                            && !nodeList.item(i).getAttributes().getNamedItem("eventType").getNodeValue().toLowerCase()
-                                    .contains("triggerparticle")) {
+                            // && !nodeList.item(i).getAttributes().getNamedItem("eventType").getNodeValue().toLowerCase()
+                            //         .contains("triggerparticle")
+                                    ) {
                         for (int j = 0; j < nodeList.item(i).getChildNodes().getLength(); j++) {
                             Node node = nodeList.item(i).getChildNodes().item(j);
                             if (node.getNodeName().equals("Condition"))
