@@ -105,6 +105,7 @@ public class ModNew {
                 if (idlist.length==1 && idlist[0].equals("0"))
                     continue;
                 boolean thieu = false, trungtuong = false;
+                String idtuongtrung="";
 
                 for (String id : idlist) {
                     if (!tryParse(id)){
@@ -113,6 +114,7 @@ public class ModNew {
                     }
                         
                     if (heroIdMods.contains(id.substring(0, 3))) {
+                        idtuongtrung = id.substring(0,3);
                         trungtuong = true;
                         break;
                     }
@@ -140,7 +142,7 @@ public class ModNew {
                     }
                 }
                 if (trungtuong) {
-                    System.out.println("Co 2 skin trung tuong");
+                    System.out.println("Co 2 skin trung tuong " + idtuongtrung);
                     continue;
                 }
                 if (thieu) {

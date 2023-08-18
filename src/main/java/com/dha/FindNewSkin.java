@@ -37,7 +37,7 @@ public class FindNewSkin {
         LanguageMap languageMap = new LanguageMap(languaStr);
         ListIconElement iconList = new ListIconElement(AOVAnalyzer
                 .AOVDecompress(DHAExtension.ReadAllBytes(AOVModHelper.DatabinPath + "Actor/heroSkin.bytes")));
-        List<Hero> heroList = gson.fromJson(DHAExtension.ReadAllText("D:/skinlist(label).json"), HeroList.class).heros;
+        List<Hero> heroList = gson.fromJson(DHAExtension.ReadAllText("D:/skinlist.json"), HeroList.class).heros;
         for (Hero hero : heroList) {
             for (Skin skin : hero.skins) {
                 skinIdList.add(skin.id);
@@ -122,7 +122,7 @@ public class FindNewSkin {
             }
         }
 
-        DHAExtension.WriteAllText("D:/skinlist(label)(new).json", gson.toJson(new HeroList(heroList)));
+        DHAExtension.WriteAllText("D:/skinlist(new).json", gson.toJson(new HeroList(heroList)));
         DHAExtension.WriteAllText("D:/skinlist.txt", skinlistTxt);
     }
 
@@ -134,7 +134,7 @@ public class FindNewSkin {
                 "a2", "s2", "s+2", "ss2",
                 "0", "n"
         });
-        List<Hero> heroList = gson.fromJson(DHAExtension.ReadAllText("D:/skinlist(label)(new).json"),
+        List<Hero> heroList = gson.fromJson(DHAExtension.ReadAllText("D:/skinlist(new).json"),
                 HeroList.class).heros;
         for (int i = 0; i < heroList.size(); i++) {
             Hero hero = heroList.get(i);
@@ -184,7 +184,7 @@ public class FindNewSkin {
                             j--;
                             break;
                     }
-                    DHAExtension.WriteAllText("D:/skinlist(label)(new).json", gson.toJson(new HeroList(heroList)));
+                    DHAExtension.WriteAllText("D:/skinlist(new).json", gson.toJson(new HeroList(heroList)));
                 }
             }
         }
