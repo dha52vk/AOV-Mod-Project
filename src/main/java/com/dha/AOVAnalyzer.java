@@ -159,33 +159,6 @@ class ProjectXML {
         return targetList;
     }
 
-    public static void removeTrackCondition(Node track, int condiIndex) {
-        if (track.getChildNodes() == null)
-            return;
-        for (int i = 0; i < track.getChildNodes().getLength(); i++) {
-            if (track.getChildNodes().item(i).getNodeName().equals("Condition")) {
-                if (Integer.parseInt(CustomNode.getAttribute(track.getChildNodes().item(i), "id")) == condiIndex) {
-                    track.removeChild(track.getChildNodes().item(i));
-                    i--;
-                }
-            }
-        }
-    }
-
-    public static Map<Integer, Boolean> getTrackConditions(Node track) {
-        if (track.getChildNodes() == null)
-            return new HashMap<>();
-        Map<Integer, Boolean> listConditionIndex = new HashMap<>();
-        for (int i = 0; i < track.getChildNodes().getLength(); i++) {
-            Node child = track.getChildNodes().item(i);
-            if (child.getNodeName().equals("Condition")) {
-                listConditionIndex.put(Integer.parseInt(CustomNode.getAttribute(child, "id")),
-                        CustomNode.getAttribute(child, "status").equals("true"));
-            }
-        }
-        return listConditionIndex;
-    }
-
     public static Node getOrConditionNode(int orConditionIndex, String guid, ConditionInfo[] conditionInfos) {
         String xml = "<Track trackName=\"CombinationConditionDuration" + orConditionIndex
                 + "\" eventType=\"CombinationConditionDuration\" guid=\"" + guid
@@ -231,6 +204,8 @@ class ProjectXML {
                 objId = "1";
                 objName = "target";
                 break;
+            default:
+                return null;
         }
         return convertStringToDocument("<Track trackName=\"CheckSkinIdTick" + trackIndex
                 + "\" eventType=\"CheckSkinIdTick\" guid=\"" + guid
@@ -239,7 +214,7 @@ class ProjectXML {
                 + "\n    <TemplateObject name=\"targetId\" id=\"" + objId + "\" objectName=\"" + objName
                 + "\" isTemp=\"false\" refParamName=\"\" useRefParam=\"false\" />"
                 + "\n    <int name=\"skinId\" value=\"" + skinId + "\" refParamName=\"\" useRefParam=\"false\" />"
-                + "\n    <bool name=\"bSkipLogicCheck\" value=\"true\" refParamName=\"\" useRefParam=\"false\" />"
+                // + "\n    <bool name=\"bSkipLogicCheck\" value=\"true\" refParamName=\"\" useRefParam=\"false\" />"
                 + "\n  </Event>"
                 + "\n</Track>").getDocumentElement().cloneNode(true);
     }

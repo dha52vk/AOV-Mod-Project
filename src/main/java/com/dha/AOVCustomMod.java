@@ -24,8 +24,11 @@ public class AOVCustomMod {
         // taopack();
         // showSkinListHasLv(SkinLabel.SSS_HH.skinLevel);
         
-        AOVModHelper helper = new AOVModHelper();
-        helper.modMapHD(true);
+        // AOVModHelper helper = new AOVModHelper();
+        // helper.modMapHD(true);
+
+        // MultiMod("1571 1573 1578", "15711 1575 1576");
+        MultiMod("1901 1902 1904 1906 1909", "19010 1908 1903 1907 19014");
     }
 
     public static void MultiMod(String baseSkin, String newSkin) throws Exception{
@@ -55,9 +58,9 @@ public class AOVCustomMod {
         helper.modLabel(modList);
         helper.modSound(modList);
         helper.modInfos(modList);
-        helper.modActionsMulti(modList);
         helper.modBackMulti(modList);
         helper.modHasteMulti(modList);
+        helper.modActionsMulti(modList);
     }
 
     public static void CustomMod(String baseSkin, String newSkin) throws Exception{

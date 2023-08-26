@@ -31,6 +31,7 @@ public class Skin {
             case "1805":
                 return SkinLabel.S.skinLevel;
             case "5213":
+            case "1297":
                 return SkinLabel.S_Plus.skinLevel;
             case "1118":
             case "19010":

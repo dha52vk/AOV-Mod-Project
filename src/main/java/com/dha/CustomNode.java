@@ -2,7 +2,9 @@ package com.dha;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.w3c.dom.Node;
 import manifold.ext.rt.api.Extension;
@@ -240,6 +242,12 @@ public class CustomNode {
         }
     }
 
+    public static void addCondition(Node node, ConditionInfo info){
+        Node condition = ProjectXML.getConditionNode(info);
+        condition = node.getOwnerDocument().importNode(condition, true);
+        node.insertBefore(condition, node.getFirstChild());
+    }
+
     public static void clearCondition(Node node){
         for (int i = 0; i < node.getChildNodes().getLength(); i++){
             if (node.getChildNodes().item(i).getNodeName().equals("Condition")){
@@ -254,6 +262,8 @@ public class CustomNode {
     }
 
     public static void removeCondition(Node node, Integer[] indexList){
+        if (node.getChildNodes() == null)
+            return;
         for (int i = 0; i < node.getChildNodes().getLength(); i++){
             if (node.getChildNodes().item(i).getNodeName().equals("Condition")){
                 if (Arrays.asList(indexList).contains(Integer.parseInt(node.getChildNodes().item(i).getAttributes().getNamedItem("id").getNodeValue()))){
@@ -262,6 +272,20 @@ public class CustomNode {
                 }
             }
         }
+    }
+
+    public static Map<Integer, Boolean> getTrackConditions(Node track) {
+        if (track.getChildNodes() == null)
+            return new HashMap<>();
+        Map<Integer, Boolean> listConditionIndex = new HashMap<>();
+        for (int i = 0; i < track.getChildNodes().getLength(); i++) {
+            Node child = track.getChildNodes().item(i);
+            if (child.getNodeName().equals("Condition")) {
+                listConditionIndex.put(Integer.parseInt(CustomNode.getAttribute(child, "id")),
+                        CustomNode.getAttribute(child, "status").equals("true"));
+            }
+        }
+        return listConditionIndex;
     }
 
     public static Node newNode(String nodeString){
