@@ -7,10 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.w3c.dom.Node;
-import manifold.ext.rt.api.Extension;
-import manifold.ext.rt.api.This;
-
-@Extension
 public class CustomNode {
     public static boolean replaceTrackStopContains(Node node, int oldIndex, int newIndex){
         if ((node.getNodeName().equals("Track") && !getAttribute(node, "eventType").equals("StopTrack"))
@@ -67,7 +63,7 @@ public class CustomNode {
         return ProjectXML.convertStringToDocument(str).getDocumentElement();
     }
 
-    public static Node getChild(@This Node node, String tagName) {
+    public static Node getChild(Node node, String tagName) {
         for (int i = 0; i < node.getChildNodes().getLength(); i++) {
             if (node.getChildNodes().item(i).getNodeName().equals(tagName)) {
                 return node.getChildNodes().item(i);
