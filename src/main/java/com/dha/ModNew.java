@@ -14,6 +14,7 @@ import com.google.gson.GsonBuilder;
 public class ModNew {
     static ModSettings modSettings = new ModSettings(true, true, true, true, true, true, true, true);
     static AOVModHelper modHelper = new AOVModHelper();
+    static int skinLevelReplace = 2;
 
     public static void main(String[] args) throws Exception {
         List<String> skinidList = new ArrayList<>();
@@ -64,7 +65,7 @@ public class ModNew {
                 List<ModInfo> modList = new ArrayList<>();
                 List<Skin> targetSkins = new ArrayList<>();
                 targetSkins.add(new Skin(id.substring(0, 3) + "1", SkinLabel.Default));
-                if (skin.label.skinLevel > 1) {
+                if (skin.label.skinLevel >= skinLevelReplace) {
                     for (Hero herocheck : heroList) {
                         if (herocheck.id.equals(id.substring(0, 3))) {
                             for (Skin skin2 : herocheck.skins) {
@@ -123,7 +124,7 @@ public class ModNew {
                         Skin skin = skinList.get(skinidList.indexOf(id));
                         List<Skin> targetSkins = new ArrayList<>();
                         targetSkins.add(new Skin(id.substring(0, 3) + "1", SkinLabel.Default));
-                        if (skin.label.skinLevel > 1) {
+                        if (skin.getSkinLevel() >= skinLevelReplace) {
                             for (Hero herocheck : heroList) {
                                 if (herocheck.id.equals(id.substring(0, 3))) {
                                     for (Skin skin2 : herocheck.skins) {

@@ -14,8 +14,12 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.google.gson.Gson;
+import com.dha.*;
 
 import java.awt.Desktop;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 
 public class AOVCustomMod {
     static ModSettings turnOnAll = new ModSettings(true, true, true, true, true, true, true, true);
@@ -23,15 +27,74 @@ public class AOVCustomMod {
     public static void main(String[] args) throws Exception {
         // taopack();
         // showSkinListHasLv(SkinLabel.SSS_HH.skinLevel);
-        
+
         // AOVModHelper helper = new AOVModHelper();
         // helper.modMapHD(true);
 
         // MultiMod("1571 1573 1578", "15711 1575 1576");
-        MultiMod("1901 1902 1904 1906 1909", "19010 1908 1903 1907 19014");
+        // MultiMod("1901 1902 1904 1906 1909", "19010 1908 1903 1907 19014");
+
+
+        // Map<String, String> resourcesMap = GetResourceFromLog("D:\\.custommod\\sepheravethanactions.txt");
+        // CustomMod("5271 5272 5275 5276 5278", "14112", resourcesMap);
+
+        // String[] imgUrlList = DHAExtension.ReadAllLines("D:/imgurllist.txt");
+        // CopyToClipboard(String.join("\n", getHtmlElementImgList(imgUrlList)));
     }
 
-    public static void MultiMod(String baseSkin, String newSkin) throws Exception{
+    static String elementFormat = "<div class=\"separator\" style=\"clear: both; text-align: center;\"><a href=\"%s\" style=\"margin-left: 1em; margin-right: 1em;\"><img border=\"0\" data-original-height=\"1536\" data-original-width=\"2048\" height=\"auto\" src=\"%s\" width=\"auto\" /></a></div><br />";
+
+    public static String[] getHtmlElementImgList(String[] imgUrlList){
+        String[] elements = new String[imgUrlList.length];
+        for (int i = 0; i < imgUrlList.length; i++){
+            imgUrlList[i] = imgUrlList[i].endsWith(".jpg") ? imgUrlList[i] : imgUrlList[i] + ".jpg";
+            elements[i] = String.format(elementFormat, imgUrlList[i], imgUrlList[i]);
+        }
+        return elements;
+    }
+
+    public static void CopyToClipboard(String string){
+        StringSelection stringSelection = new StringSelection(string);
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        clipboard.setContents(stringSelection, null);
+    }
+
+    public static Map<String, String> GetResourceFromLog(String logPath){
+        String[] lines = DHAExtension.ReadAllLines(logPath);
+        Map<String, String> resourcesMap = new HashMap<String, String>();
+        for (String line : lines){
+            String[] split = line.split(": ");
+            String oldValue = split[1]
+                            .replaceAll("(?i)Nhap resources moi cho ", "")
+                            .replaceAll("(?i)Nhap clip moi cho ", "")
+                            .replaceAll("(?i)Nhap event moi cho ", "");
+            String newValue = split.length>2 ? split[2] : "";
+            if (newValue != ""){
+                resourcesMap.put(oldValue.toLowerCase(), newValue);
+                // System.out.println(oldValue + ": " + newValue);
+            }
+        }
+        return resourcesMap;
+    }
+
+    public static void FindIconCode(String skinId) {
+        byte[] normalBytes = DHAExtension
+                .ReadAllBytes("F:\\This PC\\Documents\\GitHub\\AOVResources\\Normal\\" + skinId + ".jpg");
+        byte[] miniBytes = DHAExtension
+                .ReadAllBytes("F:\\This PC\\Documents\\GitHub\\AOVResources\\Mini\\" + skinId + ".jpg");
+
+        for (String filename : new File("F:\\This PC\\Documents\\AOV\\CDNImage\\HeroHeadIcon").list()) {
+            String filePath = "F:\\This PC\\Documents\\AOV\\CDNImage\\HeroHeadIcon\\" + filename;
+            byte[] bytes = DHAExtension.ReadAllBytes(filePath);
+            if (Arrays.equals(normalBytes, bytes)) {
+                System.out.println("Normal: " + filename);
+            } else if (Arrays.equals(miniBytes, bytes)) {
+                System.out.println("Mini: " + filename);
+            }
+        }
+    }
+
+    public static void MultiMod(String baseSkin, String newSkin) throws Exception {
         baseSkin = baseSkin.trim();
         newSkin = newSkin.trim();
         AOVModHelper helper = new AOVModHelper();
@@ -49,10 +112,10 @@ public class AOVCustomMod {
         String[] baseSkins = baseSkin.split(" ");
         String[] newSkins = newSkin.split(" ");
         List<ModInfo> modList = new ArrayList<>();
-        for (int i = 0; i < baseSkins.length; i++){
+        for (int i = 0; i < baseSkins.length; i++) {
             modList.add(new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
-                        new Skin(baseSkins[i], SkinLabel.Default)
-                })), skinMap.get(newSkins[i]), turnOnAll));
+                    new Skin(baseSkins[i], SkinLabel.Default)
+            })), skinMap.get(newSkins[i]), turnOnAll));
         }
         helper.modIcon(modList);
         helper.modLabel(modList);
@@ -63,11 +126,18 @@ public class AOVCustomMod {
         helper.modActionsMulti(modList);
     }
 
-    public static void CustomMod(String baseSkin, String newSkin) throws Exception{
-        System.out.println("Finding all resource nane...");
-        DHAExtension.WriteAllText("D:/allresources.txt", getAllResourcesForSkin(newSkin.split(" "), false));
-        Desktop desktop = Desktop.getDesktop();
-        desktop.open(new File("D:/allresources.txt"));
+    public static void CustomMod(String baseSkin, String newSkin) throws Exception {
+        CustomMod(baseSkin, newSkin, null);
+    }
+
+    public static void CustomMod(String baseSkin, String newSkin, Map<String, String> NewResourcesMap)
+            throws Exception {
+        if (NewResourcesMap == null) {
+            System.out.println("Finding all resource nane...");
+            DHAExtension.WriteAllText("D:/allresources.txt", getAllResourcesForSkin(newSkin.split(" "), false));
+            Desktop desktop = Desktop.getDesktop();
+            desktop.open(new File("D:/allresources.txt"));
+        }
 
         AOVModHelper helper = new AOVModHelper();
         helper.setEcho(true);
@@ -79,14 +149,14 @@ public class AOVCustomMod {
                 skinMap.put(skin.id, skin);
             }
         }
-        helper.setModPackName("custompack"+baseSkin.split(" ")[0] + " - " + newSkin.split(" ")[0]);
+        helper.setModPackName("custompack" + baseSkin.split(" ")[0] + " - " + newSkin.split(" ")[0]);
         DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
         List<ModInfo> modList = new ArrayList<>();
         List<Skin> baseSkinList = new ArrayList<>();
-        for (String id : baseSkin.split(" ")){
-            if (id.equals(id.substring(0, 3) + "1")){
+        for (String id : baseSkin.split(" ")) {
+            if (id.equals(id.substring(0, 3) + "1")) {
                 baseSkinList.add(new Skin(id, SkinLabel.Default));
-            }else{
+            } else {
                 baseSkinList.add(skinMap.get(id));
             }
         }
@@ -97,15 +167,21 @@ public class AOVCustomMod {
         helper.modSound(modList);
         helper.modBack(modList);
         helper.modHaste(modList);
-        helper.modActionsCustom(modList);
+        if (NewResourcesMap == null){
+            helper.modActionsCustom(modList);
+            helper.modLiteBulletCustom(modList);
+        } else{
+            helper.modActionsCustom(modList, NewResourcesMap);
+            helper.modLiteBulletCustom(modList, NewResourcesMap);
+        }
         DHAExtension.deleteDir("D:/allresources.txt");
     }
 
-    public static String getAllResourcesForSkin(String[] idList){
+    public static String getAllResourcesForSkin(String[] idList) {
         return getAllResourcesForSkin(idList, true);
     }
 
-    public static String getAllResourcesForSkin(String[] idList, boolean showFileName){
+    public static String getAllResourcesForSkin(String[] idList, boolean showFileName) {
         StringBuilder content = new StringBuilder();
         AOVModHelper helper = new AOVModHelper();
         helper.setEcho(false);
@@ -119,12 +195,12 @@ public class AOVCustomMod {
         }
         helper.setModPackName("cachepack");
         DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
-        for (String id : idList){
+        for (String id : idList) {
             try {
-                helper.modActions(Arrays.asList(new ModInfo[]{
-                    new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
-                                new Skin(id.substring(0, 3)+"1", SkinLabel.Default)
-                                })), skinMap.get(id), turnOnAll)
+                helper.modActions(Arrays.asList(new ModInfo[] {
+                        new ModInfo(new ArrayList<>(Arrays.asList(new Skin[] {
+                                new Skin(id.substring(0, 3) + "1", SkinLabel.Default)
+                        })), skinMap.get(id), turnOnAll)
                 }));
                 String path = AOVModHelper.cacheModPath;
                 path = path + "/" + new File(path).list()[0];
@@ -136,6 +212,18 @@ public class AOVCustomMod {
         }
         DHAExtension.deleteDir(AOVModHelper.saveModPath + helper.modPackName);
         return content.toString();
+    }
+
+    public static void saveListDeviceSupport(String savePath, String[] deviceCodes) {
+        saveListDeviceSupport(new ListDeviceSupport(), savePath, deviceCodes);
+    }
+
+    public static void saveListDeviceSupport(ListDeviceSupport baseList, String savePath, String[] deviceCodes) {
+        ListDeviceSupport listDevice = baseList;
+        for (String code : deviceCodes) {
+            listDevice.addNewDevice(code);
+        }
+        DHAExtension.WriteAllBytes(savePath, listDevice.getBytes());
     }
 
     public static void prettierXML(String path) {
@@ -159,9 +247,9 @@ public class AOVCustomMod {
         List<Hero> heroList = new Gson().fromJson(DHAExtension.ReadAllText(AOVModHelper.heroListJsonPath),
                 HeroList.class).heros;
         for (Hero hero : heroList) {
-            for (Skin skin : hero.skins){
-                if (skin.getSkinLevel() == skinLevel){
-                    System.out.println(hero.name + " - " + skin+"");
+            for (Skin skin : hero.skins) {
+                if (skin.getSkinLevel() == skinLevel) {
+                    System.out.println(hero.name + " - " + skin + "");
                 }
             }
         }
@@ -185,13 +273,13 @@ public class AOVCustomMod {
     public static String findAllActionsResource(String path, boolean showFileName) {
         StringBuilder content = new StringBuilder("");
         for (String child : new File(path).list()) {
-            String childPath = (path.endsWith("/") ? path : path+"/") + child;
+            String childPath = (path.endsWith("/") ? path : path + "/") + child;
             String content2 = "";
             byte[] bytes = DHAExtension.ReadAllBytes(childPath);
             byte[] decompress = AOVAnalyzer.AOVDecompress(bytes);
-            if (decompress == null){
+            if (decompress == null) {
                 content2 = new String(bytes);
-            }else{
+            } else {
                 content2 = new String(decompress);
             }
             String lines[] = content2.split("\\r?\\n|\\r");

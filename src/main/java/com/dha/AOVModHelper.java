@@ -24,7 +24,7 @@ import org.w3c.dom.NodeList;
 import com.google.gson.Gson;
 
 public class AOVModHelper {
-    public static String zipNameFormat = "Mod Skin %s 17.8 (Izumi Tv).zip";
+    public static String zipNameFormat = "Mod Skin %s 11.9 (Izumi Tv).zip";
     public static String seasonName = "S3Y23";
     public static String heroListJsonPath = "D:/skinlist.json";
     public static String ChannelName = "IzumiTv";
@@ -81,14 +81,15 @@ public class AOVModHelper {
             // type TriggerParticle
             "targetId", "resourceName", "scalingInt", "bAllowEmptyEffect", "syncAnimationName", "customTagName",
             "objectSpaceId", "lifeTime", "bindPosOffset", "bUseRealScaling", "applyActionSpeedToParticle",
-            "bindPointName", "bSyncActorAnimation", "bDonotAttackToMesh", "extend",
+            "bindPointName", "bSyncActorAnimation", "bDonotAttackToMesh", "extend", "bEnableOptCull",
             "applyActionSpeedToAnimation", "bNoDynamicLod", "lookTargetId", "bHideWhenDead", "bIgnoreWhenHideModel",
             "bForceShowParticle", "bBullerPosDir", "enableMaxFollowTime", "maxFollowTime", "bindRotOffset",
-            "bUseRootBoneScaling", "b1stTickParentRot",
+            "bUseRootBoneScaling", "b1stTickParentRot", "ReplacementSubUsage", "bApplySpecialEffect",
+            "bFreezeAnimation",
             "bReverseRotOffsetWhenCameraMirro", "bOnlySetAlpha", "resourceName2", "resourceName3", "scaling",
-            "dontShowIfNoBindPoint",
+            "dontShowIfNoBindPoint", "bResetHurtColor", "specialEffectTarget", "bEnableSkillSpecialEffect",
             "bBulletDir", "bForceIngoreCull", "bTrailProtect", "bUseClearTrailProtect", "bReverseXWhenCameraMirror",
-            "bReverseXWhenCameraMirro", "showInStatus",
+            "bReverseXWhenCameraMirro", "showInStatus", "bForceEnableTransluent", "bRotateFollowCamera",
             // type MoveBulletDuration
             "MoveType", "offsetDir", "distance", "velocity",
             // type MoveBeamDuration
@@ -156,7 +157,7 @@ public class AOVModHelper {
             "19014", "11213", "13211", "50118", "16711", "19610", "13610", "11813", "5157", "5255",
             "1135", "1913", "5069", "5483", "1696", "1209", "5464", "16712", "10618", "11617", "11812", "50114", "1669",
             "15213", "15013", "1959", "15712", "52111", "5359", "1056", "52011", "1375", "50117", "5137", "1499",
-            "1697", "1925", "52610", "5407"// , "1239", "13212", "1739", "51811", "5236"
+            "1697", "1925", "52610", "19015", "1535", "51910", "14611", "5385", "5279", "1157", "5413"
     }));
 
     public static List<String> idNotAddExtraToBack = new ArrayList<>(Arrays.asList(new String[] {
@@ -173,6 +174,7 @@ public class AOVModHelper {
         {
             put(54402, Arrays.asList(new String[] { "/Painter_Atk4_blue", "/Painter_Atk4_red" }));
             put(18004, Arrays.asList(new String[] { "_loop_" }));
+            put(53802, Arrays.asList(new String[] { "_Circle" }));
         }
     };
 
@@ -253,7 +255,7 @@ public class AOVModHelper {
             DHAExtension.deleteDir(saveModPath + modPackName);
             DHAExtension.deleteDir(saveModPath + modPackName + " (may yeu)");
 
-            Collator collator = Collator.getInstance(Locale.of("vi"));
+            Collator collator = Collator.getInstance(Locale.forLanguageTag("vi-VN"));
             modList.sort((info1, info2) -> collator.compare(info1.newSkin.name, info2.newSkin.name));
 
             modIcon(modList);
@@ -265,6 +267,8 @@ public class AOVModHelper {
             modSkillMark(modList);
             modSound(modList);
             modMotion(modList);
+            DHAExtension.copy(ResourcesPath + "version.txt", saveModPath + modPackName
+                        + "/files/Resources/" + AOVversion + "/version.txt");
 
             // copy extra battle skin
             if (copyBattleFile && modList.size() < 6) {
@@ -1348,6 +1352,148 @@ public class AOVModHelper {
         scanner.close();
     }
 
+    public void modActionsCustom(List<ModInfo> modList, Map<String, String> NewResourcesMap) throws Exception {
+        update(" Dang mod hieu ung pack " + modPackName);
+
+        modList = new ArrayList<>(modList);
+        modList.removeIf(modInfo -> !modInfo.modSettings.modAction || modInfo.newSkin.getSkinLevel() < 2);
+
+        Element channelNameElement = new Element(JT.Pri);
+        channelNameElement.setName("ChannelName");
+        channelNameElement.setType(AnalyzerType.string);
+        channelNameElement.setValue(ChannelName);
+        Element YTBLink = new Element(JT.Pri);
+        YTBLink.setName("YoutubeLink");
+        YTBLink.setType(AnalyzerType.string);
+        YTBLink.setValue(YoutubeLink);
+        Element[] creditElements = new Element[] {
+                channelNameElement, YTBLink
+        };
+        Scanner scanner = new Scanner(System.in);
+        for (int l = 0; l < modList.size(); l++) {
+            ModInfo modInfo = modList.get(l);
+            // if (!modInfo.modSettings.modAction || modInfo.newSkin.getSkinLevel() < 2) {
+            // continue;
+            // }
+            update("    + Modding actions " + (l + 1) + "/" + modList.size() + ": " + modInfo.newSkin);
+
+            String id = modInfo.newSkin.id;
+            String heroId = id.substring(0, 3);
+            String skinId = id.substring(3, id.length());
+            int skin = Integer.parseInt(skinId) - 1;
+            int idMod = Integer.parseInt(heroId) * 100 + skin;
+
+            String inputZipPath = ActionsParentPath + "Actor_"
+                    + Integer.parseInt(modInfo.targetSkins.get(0).id.substring(0, 3)) + "_Actions.pkg.bytes";
+
+            if (new File(cacheModPath).exists()) {
+                DHAExtension.deleteDir(cacheModPath);
+            }
+            new File(cacheModPath).mkdirs();
+            ZipExtension.unzip(inputZipPath, cacheModPath);
+
+            String filemodName = "";
+            for (int i = 0; i < new File(cacheModPath + filemodName).list().length; i++) {
+                String filePath = new File(cacheModPath + filemodName).list()[i];
+                if (new File(cacheModPath + filemodName + filePath).isDirectory()) {
+                    filemodName += filePath + "/";
+                    i = -1;
+                } else {
+                    break;
+                }
+            }
+
+            Map<String, String> newValueMap = new HashMap<String, String>();
+            for (String filename : new File(cacheModPath + filemodName).list()) {
+                if (filename.toLowerCase().contains("back") || filename.toLowerCase().contains("born")
+                        || (filename.toLowerCase().contains("death") && !modInfo.newSkin.hasDeathEffect)) {
+                    continue;
+                }
+                String inputPath = cacheModPath + filemodName + filename;
+                byte[] outputBytes = AOVAnalyzer.AOVDecompress(DHAExtension.ReadAllBytes(inputPath));
+                if (outputBytes == null)
+                    continue;
+
+                ProjectXML xml = new ProjectXML(new String(outputBytes, StandardCharsets.UTF_8));
+                xml.changeCheckVirtual();
+                if (!(modInfo.newSkin.filenameNotMod != null
+                        && Arrays.asList(modInfo.newSkin.filenameNotMod).contains(filename.toLowerCase()))) {
+                    xml.setValue("String", new String[] { "resourceName", "resourceName2", "prefabName", "prefab" },
+                            (StringOperator) (value) -> {
+                                if (NewResourcesMap.containsKey(value.toLowerCase())) {
+                                    newValueMap.put(value.toLowerCase(), NewResourcesMap.get(value.toLowerCase()));
+                                    // update("replaced '" + value +"' to '" + NewResourcesMap.get(value.toLowerCase()) + "'");
+                                    return NewResourcesMap.get(value.toLowerCase());
+                                } else if (NewResourcesMap.containsKey(value)) {
+                                    newValueMap.put(value.toLowerCase(), NewResourcesMap.get(value));
+                                    // update("replaced '" + value +"' to '" + NewResourcesMap.get(value) + "'");
+                                    return NewResourcesMap.get(value);
+                                } else {
+                                    return value;
+                                }
+                            });
+                    xml.setValue("bool", "bAllowEmptyEffect", "false");
+                    List<Node> playSoundTick = xml.getTrackNodeByType("PlayHeroSoundTick", true);
+                    xml.setValue("String", "eventName", "PlayHeroSoundTick", (value) -> {
+                        if (NewResourcesMap.containsKey(value.toLowerCase())) {
+                            return NewResourcesMap.get(value.toLowerCase());
+                        } else if (NewResourcesMap.containsKey(value)) {
+                            return NewResourcesMap.get(value);
+                        } else {
+                            return value;
+                        }
+                    });
+                    xml.setValue("String", "clipName", "PlayAnimDuration", (value) -> {
+                        if (NewResourcesMap.containsKey(value.toLowerCase())) {
+                            return NewResourcesMap.get(value.toLowerCase());
+                        } else if (NewResourcesMap.containsKey(value)) {
+                            return NewResourcesMap.get(value);
+                        } else {
+                            return value;
+                        }
+                    });
+                    for (Node node : playSoundTick) {
+                        xml.appendActionChild(node);
+                    }
+                }
+
+                xml.addComment("Mod By " + ChannelName + "! Subscribe: " + YoutubeLink + " ");
+                xml = specialModAction(xml, inputPath, idMod);
+
+                // DHAExtension.WriteAllBytes(inputPath, xml.getXmlString().getBytes());
+                DHAExtension.WriteAllBytes(inputPath, AOVAnalyzer.AOVCompress(xml.getXmlString().getBytes()));
+            }
+
+            ZipExtension.zipDir(cacheModPath + filemodName.split("/")[0],
+                    saveModPath + modPackName
+                            + "/files/Resources/" + AOVversion + "/Ages/Prefab_Characters/Prefab_Hero/Actor_"
+                            + Integer.parseInt(modInfo.targetSkins.get(0).id.substring(0, 3)) + "_Actions.pkg.bytes");
+
+            String inputPath = AssetRefsPath + "Hero/" + Integer.parseInt(modInfo.targetSkins.get(0).id.substring(0, 3))
+                    + "_AssetRef.bytes";
+            String outputPath;
+            outputPath = saveModPath + modPackName
+                    + "/files/Resources/" + AOVversion + "/AssetRefs/Hero/"
+                    + Integer.parseInt(modInfo.targetSkins.get(0).id.substring(0, 3)) + "_AssetRef.bytes";
+            if (new File(outputPath).exists())
+                inputPath = outputPath;
+            byte[] outputBytes = AOVAnalyzer.AOVDecompress(DHAExtension.ReadAllBytes(inputPath));
+            Element assetRef = new Element(outputBytes);
+            for (Element creditElement : creditElements) {
+                assetRef.addChild(0, creditElement);
+            }
+            assetRef = assetRef.replaceValue(AnalyzerType.string, (value) -> {
+                if (newValueMap.containsKey(value.toLowerCase().substring(1))) {
+                    return "V" + newValueMap.get(value.toLowerCase().substring(1));
+                } else {
+                    return value;
+                }
+            });
+            DHAExtension.WriteAllBytes(outputPath, AOVAnalyzer.AOVCompress(assetRef.getBytes()));
+        }
+        scanner.close();
+    }
+
     public void modActionsMulti(List<ModInfo> modList) throws Exception {
         update(" Dang mod hieu ung khong trung pack " + modPackName);
         String inputZipPath = ActionsParentPath + "CommonActions.pkg.bytes";
@@ -1863,6 +2009,58 @@ public class AOVModHelper {
         DHAExtension.WriteAllBytes(outputPath, AOVAnalyzer.AOVCompress(listBullet.getBytes()));
     }
 
+    public void modLiteBulletCustom(List<ModInfo> modList) throws IOException {
+        modLiteBulletCustom(modList, null);
+    }
+
+    public void modLiteBulletCustom(List<ModInfo> modList, Map<String, String> NewResourcesMap) throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        String inputPath = DatabinPath + "Skill/liteBulletCfg.bytes";
+        String outputPath;
+        outputPath = saveModPath + modPackName
+                + "/files/Resources/" + AOVversion + "/Databin/Client/Skill/liteBulletCfg.bytes";
+        if (new File(outputPath).exists())
+            inputPath = outputPath;
+        ListBulletElement listBullet = new ListBulletElement(
+                AOVAnalyzer.AOVDecompress(DHAExtension.ReadAllBytes(inputPath)));
+        modList = new ArrayList<>(modList);
+        modList.removeIf(modInfo -> !modInfo.modSettings.modAction || modInfo.newSkin.getSkinLevel() < 2
+                || !listBullet.containsHeroId(Integer.parseInt(modInfo.newSkin.id.substring(0, 3))));
+        if (modList.size() == 0)
+            return;
+        update(" Dang mod custom danh thuong pack " + modPackName);
+        for (int l = 0; l < modList.size(); l++) {
+            ModInfo modInfo = modList.get(l);
+            update("    + Modding lite bullets " + (l + 1) + "/" + modList.size() + ": " + modInfo.newSkin);
+
+            String id = modInfo.targetSkins.get(0).id;
+            String heroId = id.substring(0, 3);
+            String skinId = id.substring(3, id.length());
+            int skin = Integer.parseInt(skinId) - 1;
+            int idMod = Integer.parseInt(heroId) * 100 + skin;
+
+            List<BulletElement> bulletElements = listBullet.getBulletElement(Integer.parseInt(heroId));
+            for (int i = 0; i < bulletElements.size(); i++){
+                bulletElements.get(i).setEffectName((value)->{
+                    String newValue;
+                    if (NewResourcesMap == null){
+                        System.out.print("lite bullet: Nhap resources moi cho " + value + ": ");
+                        newValue = scanner.nextLine();
+                    }else if (NewResourcesMap.containsKey(value)){
+                        newValue = NewResourcesMap.get(value);
+                    }else if (NewResourcesMap.containsKey(value.toLowerCase())){
+                        newValue = NewResourcesMap.get(value.toLowerCase());
+                    }else{
+                        newValue = value;
+                    }
+                    // update("replaced " + value + " to " + newValue);
+                    return newValue;
+                });
+            }
+        }
+        DHAExtension.WriteAllBytes(outputPath, AOVAnalyzer.AOVCompress(listBullet.getBytes()));
+    }
+
     public void modSkillMark(List<ModInfo> modList) throws IOException {
 
         String inputPath = DatabinPath + "Skill/skillmark.bytes";
@@ -2199,7 +2397,8 @@ public class AOVModHelper {
             if (!idNotAddExtraToBack.contains(modInfo.newSkin.id)) {
                 while ((entry = zipin.getNextEntry()) != null) {
                     if (entry.getName().endsWith("/" + idMod + "_Back.xml")) {
-                        byte[] bytes = AOVAnalyzer.AOVDecompress(zipin.readAllBytes());
+                        byte[] bytes = AOVAnalyzer.AOVDecompress(DHAExtension.ReadAllBytes(zipin));
+                        // byte[] bytes = AOVAnalyzer.AOVDecompress(zipin.readAllBytes());
                         ProjectXML skinBackXml = new ProjectXML(new String(bytes));
                         skinBackXml.setValue("String", "eventName", "PlayHeroSoundTick", (value) -> {
                             if (!modInfo.newSkin.isAwakeSkin) {
@@ -2376,6 +2575,7 @@ public class AOVModHelper {
                 return;
             ProjectXML hasteXml = new ProjectXML(new String(outputBytes,
                     StandardCharsets.UTF_8));
+            hasteXml.changeCheckVirtual();
             List<Integer> listCheckIndex = hasteXml.getTrackIndexByType("CheckSkinIdTick");
             Map<Integer, Integer> skinIdCheckMap1 = new HashMap<>();
             Map<Integer, Integer> skinIdCheckMapNotEqual1 = new HashMap<>();
@@ -2463,7 +2663,8 @@ public class AOVModHelper {
                 NodeList nodeList = null;
                 while ((entry = zipin.getNextEntry()) != null) {
                     if (entry.getName().endsWith("/" + idMod + "_Haste.xml")) {
-                        byte[] bytes = AOVAnalyzer.AOVDecompress(zipin.readAllBytes());
+                        byte[] bytes = AOVAnalyzer.AOVDecompress(DHAExtension.ReadAllBytes(zipin));
+                        // byte[] bytes = AOVAnalyzer.AOVDecompress(zipin.readAllBytes());
                         ProjectXML skinBackXml = new ProjectXML(new String(bytes));
 
                         skinBackXml.setValue("String", new String[] { "resourceName", "resourceName2", "prefabName" },
@@ -2765,7 +2966,8 @@ public class AOVModHelper {
             NodeList nodeList = null;
             while ((entry = zipin.getNextEntry()) != null) {
                 if (entry.getName().endsWith("/" + idMod + "_Back.xml")) {
-                    byte[] bytes = AOVAnalyzer.AOVDecompress(zipin.readAllBytes());
+                    byte[] bytes = AOVAnalyzer.AOVDecompress(DHAExtension.ReadAllBytes(zipin));
+                    // byte[] bytes = AOVAnalyzer.AOVDecompress(zipin.readAllBytes());
                     ProjectXML skinBackXml = new ProjectXML(new String(bytes));
                     skinBackXml.setValue("String", "eventName", "PlayHeroSoundTick", (value) -> {
                         if (!modInfo.newSkin.isAwakeSkin) {
@@ -3011,7 +3213,8 @@ public class AOVModHelper {
                 NodeList nodeList = null;
                 while ((entry = zipin.getNextEntry()) != null) {
                     if (entry.getName().endsWith("/" + idMod + "_Haste.xml")) {
-                        byte[] bytes = AOVAnalyzer.AOVDecompress(zipin.readAllBytes());
+                        byte[] bytes = AOVAnalyzer.AOVDecompress(DHAExtension.ReadAllBytes(zipin));
+                        // byte[] bytes = AOVAnalyzer.AOVDecompress(zipin.readAllBytes());
                         ProjectXML skinBackXml = new ProjectXML(new String(bytes));
 
                         skinBackXml.setValue("String", new String[] { "resourceName", "resourceName2", "prefabName" },

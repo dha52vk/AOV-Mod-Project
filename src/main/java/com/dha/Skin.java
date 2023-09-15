@@ -23,6 +23,7 @@ public class Skin {
 
     public Skin(String skinId, SkinLabel label){
         id = skinId;
+		this.label = label;
     }
 
     public int getSkinLevel(){

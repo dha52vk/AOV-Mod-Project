@@ -10,6 +10,8 @@ public class ModSettings {
     public boolean modHaste;
     public boolean modMotion;
 
+    public ModSettings(){}
+
     public ModSettings(boolean modIcon, boolean modInfo, boolean modOrgan, boolean modAction, boolean modSound, boolean modBack, boolean modHaste, boolean modMotion){
         this.modIcon = modIcon;
         this.modInfo = modInfo;

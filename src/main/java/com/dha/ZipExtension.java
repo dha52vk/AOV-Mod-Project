@@ -88,6 +88,10 @@ public class ZipExtension {
         if (!new File(zipoutPath).getParentFile().exists())
             new File(zipoutPath).getParentFile().mkdirs();
         try {
+            String path = "F:/This PC/Documents/AOV/modsave/Mod Skin Elsu Sứ Giả Tận Thế 11.9 (Izumi Tv).zip";
+            System.out.println(zipoutPath + " - " + path +": " + zipoutPath.equals(path));
+            assert zipoutPath.equals(path);
+            new File(zipoutPath).createNewFile();
             FileOutputStream fos = new FileOutputStream(zipoutPath);
             zipDir(dirPath, fos, compressLevel);
         } catch (IOException e) {

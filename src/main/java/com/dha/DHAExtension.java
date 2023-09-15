@@ -1,6 +1,7 @@
 package com.dha;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.zip.ZipInputStream;
 
 public class DHAExtension {
     public static String convertToTitleCase(String text) {
@@ -226,21 +228,6 @@ public class DHAExtension {
         }
     }
 
-    public static byte[] ReadAllBytes(String filePath) {
-        File file = new File(filePath);
-        FileInputStream fileInputStream = null;
-        byte[] bFile = new byte[(int) file.length()];
-
-        try {
-            fileInputStream = new FileInputStream(file);
-            fileInputStream.read(bFile);
-            fileInputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return bFile;
-    }
-
     public static void WriteAllText(String fileName, String content) {
         try {
             FileOutputStream fileOut = new FileOutputStream(fileName);
@@ -270,6 +257,37 @@ public class DHAExtension {
             outputStreamWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static byte[] ReadAllBytes(String filePath) {
+        File file = new File(filePath);
+        FileInputStream fileInputStream = null;
+        byte[] bFile = new byte[(int) file.length()];
+
+        try {
+            fileInputStream = new FileInputStream(file);
+            fileInputStream.read(bFile);
+            fileInputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return bFile;
+    }
+
+    public static byte[] ReadAllBytes(ZipInputStream zipIn) {
+        try {
+            byte[] buffer = new byte[1024];
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            int len;
+            while ((len = zipIn.read(buffer)) > 0) {
+                out.write(buffer, 0, len);
+            }
+            out.close();
+            return out.toByteArray();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 

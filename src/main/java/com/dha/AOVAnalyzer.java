@@ -214,7 +214,8 @@ class ProjectXML {
                 + "\n    <TemplateObject name=\"targetId\" id=\"" + objId + "\" objectName=\"" + objName
                 + "\" isTemp=\"false\" refParamName=\"\" useRefParam=\"false\" />"
                 + "\n    <int name=\"skinId\" value=\"" + skinId + "\" refParamName=\"\" useRefParam=\"false\" />"
-                // + "\n    <bool name=\"bSkipLogicCheck\" value=\"true\" refParamName=\"\" useRefParam=\"false\" />"
+                // + "\n <bool name=\"bSkipLogicCheck\" value=\"true\" refParamName=\"\"
+                // useRefParam=\"false\" />"
                 + "\n  </Event>"
                 + "\n</Track>").getDocumentElement().cloneNode(true);
     }
@@ -360,7 +361,7 @@ class ProjectXML {
         setValue("bool", "bAllowEmptyEffect", "false");
     }
 
-    public void modSound(int idMod){
+    public void modSound(int idMod) {
         modSound(idMod, -1, -1);
     }
 
@@ -667,11 +668,13 @@ class MarkElement {
 class ListBulletElement {
     private byte[] bytes;
     public List<BulletElement> bulletElements;
+    private Map<Integer, List<BulletElement>> bulletMapWithId; 
     private List<Integer> heroIdList;
 
     public ListBulletElement(byte[] bytes) {
         this.bytes = bytes.clone();
         bulletElements = new ArrayList<>();
+        bulletMapWithId = new HashMap<Integer, List<BulletElement>>();
         heroIdList = new ArrayList<>();
         int start;
         if (bytes[0] == 'M' && bytes[1] == 'S' && bytes[2] == 'E' && bytes[3] == 'S') {
@@ -684,10 +687,18 @@ class ListBulletElement {
         while (start < bytes.length) {
             count = DHAExtension.bytesToInt(bytes, start) + 4;
             BulletElement b = new BulletElement(Arrays.copyOfRange(bytes, start, start + count));
+            if (!bulletMapWithId.containsKey(b.getHeroId())){
+                bulletMapWithId.put(b.getHeroId(), new ArrayList<>());
+            }
+            bulletMapWithId.get(b.getHeroId()).add(b);
             heroIdList.add(b.getHeroId());
             bulletElements.add(b);
             start += count;
         }
+    }
+
+    public List<BulletElement> getBulletElement(int heroId){
+        return bulletMapWithId.get(heroId);
     }
 
     public boolean containsHeroId(int heroId) {
@@ -802,47 +813,48 @@ class ListMotionElement {
         }
     }
 
-    public void showMotionCodes(int heroId){
+    public void showMotionCodes(int heroId) {
         showMotionCodes(heroId, 0);
     }
 
-    public void showMotionCodes(int heroId, int space){
+    public void showMotionCodes(int heroId, int space) {
         String s = "";
-        for (int i = 0; i < space; i++){
-            s+=" ";
+        for (int i = 0; i < space; i++) {
+            s += " ";
         }
-        for (MotionElement m : motionElements){
-            if (m.getHeroId() == heroId){
+        for (MotionElement m : motionElements) {
+            if (m.getHeroId() == heroId) {
                 System.out.println(s + m.motionCodes);
             }
         }
     }
 
-    public void copyMotion(int heroId, String baseMotionCode, String newMotionCode) throws Exception{
-        copyMotion(heroId, new String[]{baseMotionCode}, newMotionCode);
+    public void copyMotion(int heroId, String baseMotionCode, String newMotionCode) throws Exception {
+        copyMotion(heroId, new String[] { baseMotionCode }, newMotionCode);
     }
 
-    public void copyMotion(int heroId, String[] baseMotionCode, String newMotionCode) throws Exception{
-        List<Integer> baseIndexs=null;
-        int newIndex=-1;
-        for (int i = 0; i < motionElements.size(); i++){
-            if (motionElements.get(i).getHeroId() == heroId){
-                if (motionElements.get(i).motionCodes.contains(newMotionCode)){
+    public void copyMotion(int heroId, String[] baseMotionCode, String newMotionCode) throws Exception {
+        List<Integer> baseIndexs = null;
+        int newIndex = -1;
+        for (int i = 0; i < motionElements.size(); i++) {
+            if (motionElements.get(i).getHeroId() == heroId) {
+                if (motionElements.get(i).motionCodes.contains(newMotionCode)) {
                     newIndex = i;
-                }else if (DHAExtension.listContainsElementFromOther(motionElements.get(i).motionCodes.toArray(new String[0]), baseMotionCode)){
+                } else if (DHAExtension.listContainsElementFromOther(
+                        motionElements.get(i).motionCodes.toArray(new String[0]), baseMotionCode)) {
                     if (baseIndexs == null)
                         baseIndexs = new ArrayList<>();
                     baseIndexs.add(i);
                 }
             }
         }
-        if (baseIndexs != null && newIndex != -1){
-            for (int baseIndex : baseIndexs){
+        if (baseIndexs != null && newIndex != -1) {
+            for (int baseIndex : baseIndexs) {
                 int oldIndex = motionElements.get(baseIndex).getIndex();
                 motionElements.set(baseIndex, new MotionElement(motionElements.get(newIndex).getBytes()));
                 motionElements.get(baseIndex).setIndex(oldIndex);
             }
-        }else{
+        } else {
             throw new Exception("not found code " + baseMotionCode + " or " + newMotionCode);
         }
     }
@@ -871,29 +883,29 @@ class MotionElement {
         this.bytes = bytes.clone();
         motionCodes = new ArrayList<>();
 
-        int index=9;
-        while (index < bytes.length-5) {
+        int index = 9;
+        while (index < bytes.length - 5) {
             int length = DHAExtension.bytesToInt(bytes, index);
             if (length == 0)
                 throw new Exception("Length error");
-            if (length == 1){
+            if (length == 1) {
                 index += 5;
                 continue;
             }
-            motionCodes.add(new String(Arrays.copyOfRange(bytes, index+4, index+length+3)));
+            motionCodes.add(new String(Arrays.copyOfRange(bytes, index + 4, index + length + 3)));
             index += length + 4;
         }
     }
 
-    public int getHeroId(){
-        return DHAExtension.bytesToInt(bytes, bytes.length-5);
+    public int getHeroId() {
+        return DHAExtension.bytesToInt(bytes, bytes.length - 5);
     }
 
-    public void setIndex(int index){
+    public void setIndex(int index) {
         bytes = DHAExtension.replaceBytes(bytes, 4, 8, DHAExtension.toBytes(index));
     }
 
-    public int getIndex(){
+    public int getIndex() {
         return DHAExtension.bytesToInt(bytes, 4);
     }
 
@@ -1258,14 +1270,15 @@ class ListIconElement {
                 iconElements.get(iconIndexDict.get(targetId)).setIconId(sourceId);
                 iconElements.get(iconIndexDict.get(targetId)).setIconIndex(targetId % 100);
                 iconElements.get(iconIndexDict.get(targetId)).setIconCode("30" + (sourceId / 100) + (sourceId % 100));
-                if (sourceId/100 != targetId/100){
+                if (sourceId / 100 != targetId / 100) {
                     iconElements.get(iconIndexDict.get(targetId)).setHeroNameCode(oldHeroCode);
                 }
             } else {
                 iconElements.get(iconIndexDict.get(sourceId)).setIconId(sourceId);
                 iconElements.get(iconIndexDict.get(sourceId)).setIconCode("30" + (sourceId / 100) + (sourceId % 100));
-                if (sourceId/100 != targetId/100){
-                    iconElements.get(iconIndexDict.get(sourceId)).setHeroNameCode(iconElements.get(iconIndexDict.get(sourceId)).heronamecode);
+                if (sourceId / 100 != targetId / 100) {
+                    iconElements.get(iconIndexDict.get(sourceId))
+                            .setHeroNameCode(iconElements.get(iconIndexDict.get(sourceId)).heronamecode);
                 }
             }
         } else {
@@ -1317,7 +1330,7 @@ class IconElement {
         iconCode = new String(Arrays.copyOfRange(bytes, 68, 67 + DHAExtension.bytesToInt(bytes, 64)));
     }
 
-    public void setHeroNameCode(String code){
+    public void setHeroNameCode(String code) {
         bytes = DHAExtension.replaceBytes(bytes, 16, 35, code.getBytes());
     }
 
@@ -1573,12 +1586,12 @@ class Element {
         return childMap.containsKey(name);
     }
 
-    public boolean removeChild(String name){
+    public boolean removeChild(String name) {
         if (!containsChild(name))
             return false;
 
-        for (int i = 0; i < childList.size(); i++){
-            if (childList.get(i).nameS.equals(name)){
+        for (int i = 0; i < childList.size(); i++) {
+            if (childList.get(i).nameS.equals(name)) {
                 removeChildAt(i);
                 return true;
             }
@@ -1734,8 +1747,10 @@ class Element {
             return element;
         }
 
-        for (int i = 0; i < element.childList.size(); i++) {
-            element.childList.set(i, replaceValue(element.childList.get(i), type, operator));
+        if (element.childList != null) {
+            for (int i = 0; i < element.childList.size(); i++) {
+                element.childList.set(i, replaceValue(element.childList.get(i), type, operator));
+            }
         }
 
         return element;
@@ -1753,8 +1768,10 @@ class Element {
             return element;
         }
 
-        for (int i = 0; i < element.childList.size(); i++) {
-            element.childList.set(i, replaceValue(element.childList.get(i), type, target, replace));
+        if (element.childList != null) {
+            for (int i = 0; i < element.childList.size(); i++) {
+                element.childList.set(i, replaceValue(element.childList.get(i), type, target, replace));
+            }
         }
 
         return element;

@@ -1,4 +1,5 @@
 {
     "java.configuration.updateBuildConfiguration": "automatic",
-    "java.debug.settings.onBuildFailureProceed": true
+    "java.debug.settings.onBuildFailureProceed": true,
+    "terminal.integrated.shellArgs.windows": ["-NoExit", "/c", "chcp.com 65001"]
 }
